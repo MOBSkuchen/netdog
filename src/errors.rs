@@ -1,7 +1,9 @@
+use std::cmp::PartialEq;
 use std::fmt;
-use std::ptr::write;
+use crate::errors::HttpError::INTERNAL_ERROR;
 
-enum HttpError {
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum HttpError {
     OK = 200,
     BAD_REQUEST = 400,
     UNAUTHORIZED = 401,
@@ -15,20 +17,20 @@ pub type NtResult<T> = Result<T, NtError>;
 
 #[derive(Debug, Clone)]
 pub struct NtError {
-    my_fault: bool,
+    pub erc: HttpError,
     details: String
 }
 
 impl NtError {
-    pub fn new(my_fault: bool, details: Option<String>) -> Self {
+    pub fn new(erc: HttpError, details: Option<String>) -> Self {
         let details_x = if details.is_some() {details.unwrap()} else {"No details provided".to_string()};
-        Self {my_fault, details: details_x}
+        Self {erc, details: details_x}
     }
 }
 
 impl fmt::Display for NtError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.my_fault {
+        if self.erc == INTERNAL_ERROR {
             write!(f, format!("Internal error in NetDog -> {}", self.details)).expect("Panicked!");
             return Ok(());
         }
