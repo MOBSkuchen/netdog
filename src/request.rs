@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 use crate::errors::HttpError::BAD_REQUEST;
 use crate::errors::{NtError, NtResult};
-use crate::Methods;
 
+enum Methods {
+    GET,
+    POST
+}
 type Headers = HashMap<String, String>;
 
 fn split_once(in_string: &str) -> Result<(&str, &str), NtError> {
