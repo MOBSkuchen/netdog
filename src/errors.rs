@@ -31,7 +31,7 @@ impl NtError {
 impl fmt::Display for NtError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.erc == INTERNAL_ERROR {
-            write!(f, format!("Internal error in NetDog -> {}", self.details)).expect("Panicked!");
+            write!(f, "Internal error in NetDog -> {}", self.details).expect("Panicked!");
             return Ok(());
         }
         write!(f, "Other-side-error")
