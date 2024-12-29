@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use crate::errors::HttpError::BAD_REQUEST;
+use crate::errors::HttpCode::BAD_REQUEST;
 use crate::errors::{NtError, NtResult};
 
 enum Methods {
     GET,
     POST
 }
-type Headers = HashMap<String, String>;
+pub type Headers = HashMap<String, String>;
 
 fn split_once(in_string: &str) -> Result<(&str, &str), NtError> {
     let mut splitter = in_string.splitn(2, ": ");
@@ -16,18 +16,19 @@ fn split_once(in_string: &str) -> Result<(&str, &str), NtError> {
     Ok((first, second))
 }
 
-struct HttpRequest {
-    method: Methods,
+pub struct HttpRequest {
+    pub method: Methods,
     protocol_v: String,
-    path: String,
-    headers: Headers,
+    pub path: String,
+    pub headers: Headers,
+    pub body: Vec<u8>
 }
 
 impl HttpRequest {
     pub fn new(method: Methods,
                protocol_v: String,
                path: String) -> Self {
-        Self {method, protocol_v, path, headers: Default::default()}
+        Self {method, protocol_v, path, headers: Default::default(), body: vec![]}
     }
 
     pub fn mk_headers(lns: Vec<String>) -> NtResult<Headers> {
@@ -61,6 +62,10 @@ impl HttpRequest {
 
         let headers = Self::mk_headers(req_lines)?;
 
-        Ok(Self {method, protocol_v, path, headers})
+        Ok(Self {method, protocol_v, path, headers, body: vec![]})
+    }
+
+    pub fn set_body(&mut self, body: Vec<u8>) {
+        self.body = body
     }
 }
