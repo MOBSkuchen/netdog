@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::errors::HttpCode::BAD_REQUEST;
 use crate::errors::{NtError, NtResult};
 
+#[derive(Debug)]
 enum Methods {
     GET,
     POST
@@ -16,6 +17,7 @@ fn split_once(in_string: &str) -> Result<(&str, &str), NtError> {
     Ok((first, second))
 }
 
+#[derive(Debug)]
 pub struct HttpRequest {
     pub method: Methods,
     protocol_v: String,
