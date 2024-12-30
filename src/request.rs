@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::errors::HttpCode::BAD_REQUEST;
-use crate::errors::{NtError, NtResult};
+use crate::errors::{NetError, NetResult};
 
 #[derive(Debug)]
 enum Methods {
@@ -9,9 +9,9 @@ enum Methods {
 }
 pub type Headers = HashMap<String, String>;
 
-fn split_once(in_string: &str) -> Result<(&str, &str), NtError> {
+fn split_once(in_string: &str) -> Result<(&str, &str), NetError> {
     let mut splitter = in_string.splitn(2, ": ");
-    if splitter.clone().count() < 2 {return Err(NtError::new(BAD_REQUEST, None))}
+    if splitter.clone().count() < 2 {return Err(NetError::new(BAD_REQUEST, None))}
     let first = splitter.next().unwrap();
     let second = splitter.next().unwrap();
     Ok((first, second))
@@ -33,7 +33,7 @@ impl HttpRequest {
         Self {method, protocol_v, path, headers: Default::default(), body: vec![]}
     }
 
-    pub fn mk_headers(lns: Vec<String>) -> NtResult<Headers> {
+    pub fn mk_headers(lns: Vec<String>) -> NetResult<Headers> {
         let mut hsm = Headers::new();
 
         for ln in lns {
@@ -44,16 +44,16 @@ impl HttpRequest {
         Ok(hsm)
     }
 
-    pub fn from_raw(mut req_lines: Vec<String>) -> NtResult<Self> {
-        if (&req_lines).is_empty() { return Err(NtError::new(BAD_REQUEST, None)) }
+    pub fn from_raw(mut req_lines: Vec<String>) -> NetResult<Self> {
+        if (&req_lines).is_empty() { return Err(NetError::new(BAD_REQUEST, None)) }
         let head_line = (&req_lines)[0].clone();
         let head_line_v = head_line.split(" ").collect::<Vec<_>>();
-        if head_line_v.clone().len() != 3 {return Err(NtError::new(BAD_REQUEST, None))}
+        if head_line_v.clone().len() != 3 {return Err(NetError::new(BAD_REQUEST, None))}
 
         let method = match head_line_v[0].to_uppercase().as_str() {
             "GET" => Methods::GET,
             "POST" => Methods::POST,
-            _ => {return Err(NtError::new(BAD_REQUEST, None))}
+            _ => {return Err(NetError::new(BAD_REQUEST, None))}
         };
 
         let path = head_line_v[1].to_string();
