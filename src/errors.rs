@@ -1,5 +1,6 @@
 use std::cmp::PartialEq;
 use std::fmt;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum HttpCode {
@@ -10,36 +11,59 @@ pub enum HttpCode {
     NOT_FOUND = 404,
     METHOD_NOT_ALLOWD = 405,
     INTERNAL_ERROR = 500,
-    NETDOG_ERROR
 }
 
-pub type NtResult<T> = Result<T, NtError>;
+pub type NetResult<T> = Result<T, NetError>;
 
 #[derive(Clone)]
-pub struct NtError {
+pub struct NetError {
     pub erc: HttpCode,
     details: String
 }
 
-impl NtError {
+impl NetError {
     pub fn new(erc: HttpCode, details: Option<String>) -> Self {
         let details_x = if details.is_some() {details.unwrap()} else {"No details provided".to_string()};
         Self {erc, details: details_x}
     }
 
     pub fn to_erf(&self) -> (HttpCode, String) {
-        let mut erc = (self.erc.clone(), self.details.clone());
-        if erc.0 == HttpCode::NETDOG_ERROR {erc.0 = HttpCode::INTERNAL_ERROR}
-        erc
+        (self.erc.clone(), self.details.clone())
     }
 }
 
-impl fmt::Display for NtError {
+impl fmt::Display for NetError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.erc == HttpCode::NETDOG_ERROR {
-            write!(f, "Internal error in NetDog -> {}", self.details).expect("Panicked!");
-            return Ok(());
-        }
-        write!(f, "Other-side-error")
+        write!(f, "{}", self.details)
+    }
+}
+
+pub type DogResult<T> = Result<T, DogError>;
+
+#[derive(Clone, Debug)]
+pub struct DogError {
+    pub name: String,
+    pub details: String
+}
+
+impl DogError {
+    fn __fmtx(&self) -> String {
+        format!("NetDog Error -> {}: {}", self.name, self.details)
+    }
+    pub fn new(name: String, details: String) -> Self {
+        let s = Self {name, details};
+        println!("{}", s.__fmtx());
+        s.__terminate();
+        s
+    }
+    
+    pub fn __terminate(&self) {
+        std::process::exit(1)
+    }
+}
+
+impl Display for DogError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "NetDog Error -> {}: {}", self.name, self.details)
     }
 }
