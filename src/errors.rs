@@ -18,7 +18,7 @@ pub type NetResult<T> = Result<T, NetError>;
 #[derive(Clone)]
 pub struct NetError {
     pub erc: HttpCode,
-    details: String
+    pub details: String
 }
 
 impl NetError {
