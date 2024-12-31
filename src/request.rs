@@ -2,11 +2,31 @@ use std::collections::HashMap;
 use crate::errors::HttpCode::BAD_REQUEST;
 use crate::errors::{NetError, NetResult};
 
-#[derive(Debug)]
-enum Methods {
+#[derive(Clone, Debug)]
+pub enum Methods {
     GET,
     POST
 }
+
+impl Methods {
+    pub fn from_str(s: &str) -> Result<Self, ()> {
+        match s.to_uppercase().as_str() {
+            "GET" => Ok(Methods::GET),
+            "POST" => Ok(Methods::POST),
+            _ => {Err(())}
+        }
+    }
+    
+    pub fn from_str_mult(sv: Vec<&str>) -> Result<Vec<Methods>, ()> {
+        let mut ret: Vec<Methods> = vec![];
+        for s in sv {
+            let i = Self::from_str(s)?;
+            ret.push(i);
+        }
+        Ok(ret)
+    }
+}
+
 pub type Headers = HashMap<String, String>;
 
 fn split_once(in_string: &str) -> Result<(&str, &str), NetError> {
@@ -49,12 +69,10 @@ impl HttpRequest {
         let head_line = (&req_lines)[0].clone();
         let head_line_v = head_line.split(" ").collect::<Vec<_>>();
         if head_line_v.clone().len() != 3 {return Err(NetError::new(BAD_REQUEST, None))}
-
-        let method = match head_line_v[0].to_uppercase().as_str() {
-            "GET" => Methods::GET,
-            "POST" => Methods::POST,
-            _ => {return Err(NetError::new(BAD_REQUEST, None))}
-        };
+        
+        let method_r = Methods::from_str(head_line_v[0].to_uppercase().as_str());
+        if method_r.is_err() {return Err(NetError::new(BAD_REQUEST, None))}
+        let method = method_r.unwrap();
 
         let path = head_line_v[1].to_string();
         let protocol_v = head_line_v[2].to_string();
