@@ -179,18 +179,19 @@ impl System {
     pub fn route_error(&self, error: NetError) -> HttpResponse {
         let erc = &(error.erc.clone() as u16);
         if (&self.errors).contains_key(&erc) {
-            let content = Self::load_content_path(self.errors.get(erc).unwrap().path.clone());
+            let r_fn = self.errors.get(erc).unwrap().path.clone();
+            let content = Self::load_content_path(r_fn.clone().into());
             if content.is_err() {return Self::netdog_error(content.unwrap_err())}
-            HttpResponse::new((error.erc, error.details), Headers::new(), (content.unwrap(), ContentType::HTML))
+            HttpResponse::new((error.erc, error.details), Headers::new(), (content.unwrap(), ContentType::from_file_name(&*r_fn)))
         } else {
             HttpResponse::new((error.erc, error.details), Headers::new(), (format!("Error {}", erc).into_bytes(), ContentType::HTML))
         }
     }
 
     pub fn route_to_response(route: Route) -> HttpResponse {
-        let content = Self::load_content_path(route.path);
+        let content = Self::load_content_path(route.path.clone().into());
         if content.is_err() {return Self::netdog_error(content.unwrap_err())}
-        HttpResponse::new((HttpCode::OK, "OK".to_string()), Headers::new(), (content.unwrap(), HTML))
+        HttpResponse::new((HttpCode::OK, "OK".to_string()), Headers::new(), (content.unwrap(), ContentType::from_file_name(&*route.path)))
     }
 
     pub fn route(&self, req: HttpRequest) -> HttpResponse {

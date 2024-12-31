@@ -4,10 +4,101 @@ use std::net::TcpStream;
 use crate::errors::{DogError, DogResult, HttpCode, NetError};
 use crate::request::Headers;
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum ContentType {
     HTML,
-    NONE
+    JSON,
+    XML,
+    PLAIN,
+    CSS,
+    JAVASCRIPT,
+    JPEG,
+    PNG,
+    GIF,
+    BMP,
+    SVG,
+    WEBP,
+    MP3,
+    MP4,
+    WAV,
+    OGG,
+    AVI,
+    PDF,
+    ZIP,
+    TAR,
+    GZIP,
+    BZIP2,
+    WEBM,
+    ICO,
+    NONE,
+    UNKNOWN
+}
+
+impl ContentType {
+    pub fn to_string(&self) -> String {
+        match self {
+            ContentType::HTML => "text/html",
+            ContentType::JSON => "application/json",
+            ContentType::XML => "application/xml",
+            ContentType::PLAIN => "text/plain",
+            ContentType::CSS => "text/css",
+            ContentType::JAVASCRIPT => "application/javascript",
+            ContentType::JPEG => "image/jpeg",
+            ContentType::PNG => "image/png",
+            ContentType::GIF => "image/gif",
+            ContentType::BMP => "image/bmp",
+            ContentType::SVG => "image/svg+xml",
+            ContentType::WEBP => "image/webp",
+            ContentType::MP3 => "audio/mpeg",
+            ContentType::MP4 => "video/mp4",
+            ContentType::WAV => "audio/wav",
+            ContentType::OGG => "audio/ogg",
+            ContentType::AVI => "video/x-msvideo",
+            ContentType::PDF => "application/pdf",
+            ContentType::ZIP => "application/zip",
+            ContentType::TAR => "application/x-tar",
+            ContentType::GZIP => "application/gzip",
+            ContentType::BZIP2 => "application/x-bzip2",
+            ContentType::WEBM => "video/webm",
+            ContentType::ICO => "image/x-icon",
+            ContentType::NONE => "",
+            ContentType::UNKNOWN => "application/octet-stream",
+        }.to_string()
+    }
+
+    pub fn from_file_name(file_name: &str) -> ContentType {
+        if !file_name.contains(".") { return ContentType::UNKNOWN }
+        let mut splitter = file_name.splitn(2, ".");
+        splitter.next().unwrap();
+        match splitter.next().unwrap().to_lowercase().as_str() {
+            "html" | "htm" => ContentType::HTML,
+            "json" => ContentType::JSON,
+            "xml" => ContentType::XML,
+            "txt" => ContentType::PLAIN,
+            "css" => ContentType::CSS,
+            "js" => ContentType::JAVASCRIPT,
+            "jpeg" | "jpg" => ContentType::JPEG,
+            "png" => ContentType::PNG,
+            "gif" => ContentType::GIF,
+            "bmp" => ContentType::BMP,
+            "svg" => ContentType::SVG,
+            "webp" => ContentType::WEBP,
+            "mp3" => ContentType::MP3,
+            "mp4" => ContentType::MP4,
+            "wav" => ContentType::WAV,
+            "ogg" => ContentType::OGG,
+            "avi" => ContentType::AVI,
+            "pdf" => ContentType::PDF,
+            "zip" => ContentType::ZIP,
+            "tar" => ContentType::TAR,
+            "gz" => ContentType::GZIP,
+            "bz2" => ContentType::BZIP2,
+            "webm" => ContentType::WEBM,
+            "ico" => ContentType::ICO,
+            "" => ContentType::NONE,
+            _ => ContentType::UNKNOWN,
+        }
+    }
 }
 
 pub struct HttpResponse {
@@ -18,13 +109,6 @@ pub struct HttpResponse {
     has_content: bool
 }
 
-fn ct_to_str(ct: ContentType) -> String {
-    match ct {
-        ContentType::HTML => {"text/html".to_string()}
-        ContentType::NONE => {"".to_string()}
-    }
-}
-
 impl HttpResponse {
     pub fn new(response: (HttpCode, String),
                headers: Headers,
@@ -32,7 +116,7 @@ impl HttpResponse {
         let mut header_c = headers.clone();
         if content.1 != ContentType::NONE {
             header_c.insert("Content-Length".to_string(), content.0.len().to_string());
-            header_c.insert("Content-Type".to_string(), ct_to_str(content.1.clone()));
+            header_c.insert("Content-Type".to_string(), content.1.clone().to_string());
         }
         Self {protocol_v: "HTTP/1.1".to_string(), response, headers: header_c, content: (&content).to_owned(), has_content: content.1 != ContentType::NONE}
     }
