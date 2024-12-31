@@ -1,13 +1,15 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::fs;
 use std::str::FromStr;
 use regex::Regex;
 use serde::Deserialize;
 use toml::{Table, Value};
-use crate::errors::{DogError, DogResult, NetError, NetResult};
+use crate::errors::{DogError, DogResult, HttpCode, NetError, NetResult};
 use crate::errors::HttpCode::{INTERNAL_ERROR, NOT_FOUND};
-use crate::request::{Headers, Methods};
+use crate::request::{Headers, HttpRequest, Methods};
 use crate::response::{ContentType, HttpResponse};
+use crate::response::ContentType::HTML;
 
 fn unwrap_or_error<T>(results: Vec<Option<T>>) -> Option<Vec<T>> {
     let mut unwrapped = Vec::new();
@@ -22,18 +24,18 @@ fn unwrap_or_error<T>(results: Vec<Option<T>>) -> Option<Vec<T>> {
     Some(unwrapped)
 }
 
-fn map_url(route: &Route, url: &str) -> NetResult<Route> {
-    let regex = Regex::new(&route.url).map_err(|_| NetError::new(NOT_FOUND, Some("Resource not found".to_string())))?;
-    if regex.is_match(url) {
+fn map_url(route: &Route, url: &str, method: &Methods) -> Result<Route, ()> {
+    let regex = Regex::new(&route.url).map_err(|_| ())?;
+    if regex.is_match(url) && route.methods.contains(&method) {
         Ok(route.clone())
     } else {
-        Err(NetError::new(NOT_FOUND, Some("Resource not found".to_string())))
+        Err(())
     }
 }
 
-fn map_url_multiple(routes: &[Route], url: &str) -> NetResult<Route> {
+fn map_url_multiple(routes: &[Route], url: &str, method: Methods) -> NetResult<Route> {
     for route in routes {
-        let x = map_url(route, url);
+        let x = map_url(route, url, &method);
         if x.is_ok() {return Ok(x.unwrap());}
     }
     Err(NetError::new(NOT_FOUND, Some("No matching route found".to_string())))
@@ -60,8 +62,8 @@ impl Route {
     pub fn new(name: String, t: Table) -> DogResult<Self> {
         if !t.contains_key("path") {return Err(DogError::new("usr-cfgensure-cfgld".to_string(), "Missing key 'path'".to_string()))}
         if !t.contains_key("url") {return Err(DogError::new("usr-cfgensure-cfgld".to_string(), "Missing key 'url'".to_string()))}
-        let methods = 
-            if t.contains_key("method") { 
+        let methods =
+            if t.contains_key("method") {
             Methods::from_str(t.get("method").unwrap().as_str().unwrap())
                 .map(|t1| {vec![t1]}).
                 or_else(|e| {
@@ -77,8 +79,8 @@ impl Route {
                     Err(DogError::new("usr-cfgensure-cfgld".to_string(), "Ill formatted key 'methods'".to_string()))
                 )
             } else { return Err(DogError::new("usr-cfgensure-cfgld".to_string(), "Missing key 'method' or 'methods'".to_string())) };
-        
-        Ok(Self {name, path: t.get("path").unwrap().to_string(), url: t.get("url").unwrap().to_string(), methods: methods?})
+
+        Ok(Self {name, path: t.get("path").unwrap().as_str().unwrap().to_string(), url: t.get("url").unwrap().as_str().unwrap().to_string(), methods: methods?})
     }
     
     pub fn tbljob(t: Table) -> DogResult<HashMap<String, Route>> {
@@ -143,11 +145,11 @@ impl System {
         
         Ok(System::new(config)?)
     }
-    
+
     pub fn netdog_error(error: DogError) -> HttpResponse {
         HttpResponse::new((INTERNAL_ERROR, error.name), Headers::new(), (vec![], ContentType::NONE))
     }
-    
+
     pub fn load_content_path(path: String) -> DogResult<Vec<u8>> {
         let r = fs::read(&path);
         if r.is_err() {
@@ -156,7 +158,7 @@ impl System {
             Ok(r.unwrap())
         }
     }
-    
+
     pub fn route_error(&self, error: NetError) -> HttpResponse {
         let erc = &(error.erc.clone() as u16);
         if (&self.errors).contains_key(&erc) {
@@ -166,5 +168,17 @@ impl System {
         } else {
             HttpResponse::new((error.erc, error.details), Headers::new(), (format!("Error {}", erc).into_bytes(), ContentType::HTML))
         }
+    }
+    
+    pub fn route_to_response(route: Route) -> HttpResponse {
+        let content = Self::load_content_path(route.path);
+        if content.is_err() {return Self::netdog_error(content.unwrap_err())}
+        HttpResponse::new((HttpCode::OK, "OK".to_string()), Headers::new(), (content.unwrap(), HTML))
+    }
+
+    pub fn route(&self, req: HttpRequest) -> HttpResponse {
+        let response = map_url_multiple(&self.routes.values().map(|a| {a.to_owned()}).collect::<Vec<Route>>(), &*req.path, req.method);
+        if response.is_err() {self.route_error(response.unwrap_err())}
+        else {Self::route_to_response(response.unwrap())}
     }
 }
