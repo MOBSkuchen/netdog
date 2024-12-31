@@ -36,7 +36,7 @@ impl HttpResponse {
 
     pub fn make(&self) -> Vec<u8> {
         let content_vecu8 = &self.content;
-        let mut r = format!("{} {:?} {}", self.protocol_v, self.response.0, self.response.1);
+        let mut r = format!("{} {:?} {}", self.protocol_v, self.response.0.to_num(), self.response.1);
         for header in &self.headers {
             r += format!("\n{}: {}", header.0, header.1).as_str()
         }
