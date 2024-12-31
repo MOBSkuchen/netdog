@@ -2,9 +2,8 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs;
 use std::str::FromStr;
-use regex::Regex;
 use serde::Deserialize;
-use toml::{Table, Value};
+use toml::{Table};
 use crate::errors::{DogError, DogResult, HttpCode, NetError, NetResult};
 use crate::errors::HttpCode::{INTERNAL_ERROR, NOT_FOUND};
 use crate::request::{Headers, HttpRequest, Methods};
@@ -17,25 +16,38 @@ fn unwrap_or_error<T>(results: Vec<Option<T>>) -> Option<Vec<T>> {
     for result in results {
         match result {
             Some(value) => unwrapped.push(value),
-            None => return None, // Return the first error encountered
+            None => return None,
         }
     }
 
     Some(unwrapped)
 }
 
-fn map_url(route: &Route, url: &str, method: &Methods) -> Result<Route, ()> {
-    let regex = Regex::new(&route.url).map_err(|_| ())?;
-    if regex.is_match(url) && route.methods.contains(&method) {
-        Ok(route.clone())
+fn url_resolve(route: &Route, url: &str, method: &Methods) -> Result<Route, ()> { 
+    let resolved_path = if route.url.contains("*") {
+        let parts: Vec<&str> = route.url.split('*').collect();
+        if parts.len() > 2 { return Err(()); }
+        if !url.starts_with(parts[0]) || !url.ends_with(parts.get(1).unwrap_or(&"")) { return Err(()); }
+        let dynamic_part = &url[parts[0].len()..url.len() - parts.get(1).unwrap_or(&"").len()];
+        if !route.methods.contains(method) { return Err(()); }
+        route.path.replace('*', dynamic_part)
     } else {
-        Err(())
-    }
+        if route.url != url {
+            return Err(())
+        }
+        route.path.clone()
+    };
+    Ok(Route {
+        path: resolved_path,
+        url: route.url.clone(),
+        methods: route.methods.clone(),
+        name: (&route).name.clone().into(),
+    })
 }
 
-fn map_url_multiple(routes: &[Route], url: &str, method: Methods) -> NetResult<Route> {
+fn url_resolve_mult(routes: &[Route], url: &str, method: Methods) -> NetResult<Route> {
     for route in routes {
-        let x = map_url(route, url, &method);
+        let x = url_resolve(route, url, &method);
         if x.is_ok() {return Ok(x.unwrap());}
     }
     Err(NetError::new(NOT_FOUND, Some("No matching route found".to_string())))
@@ -169,7 +181,7 @@ impl System {
             HttpResponse::new((error.erc, error.details), Headers::new(), (format!("Error {}", erc).into_bytes(), ContentType::HTML))
         }
     }
-    
+
     pub fn route_to_response(route: Route) -> HttpResponse {
         let content = Self::load_content_path(route.path);
         if content.is_err() {return Self::netdog_error(content.unwrap_err())}
@@ -177,7 +189,7 @@ impl System {
     }
 
     pub fn route(&self, req: HttpRequest) -> HttpResponse {
-        let response = map_url_multiple(&self.routes.values().map(|a| {a.to_owned()}).collect::<Vec<Route>>(), &*req.path, req.method);
+        let response = url_resolve_mult(&self.routes.values().map(|a| {a.to_owned()}).collect::<Vec<Route>>(), &*req.path, req.method);
         if response.is_err() {self.route_error(response.unwrap_err())}
         else {Self::route_to_response(response.unwrap())}
     }
