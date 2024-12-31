@@ -13,9 +13,16 @@ pub enum HttpCode {
     INTERNAL_ERROR = 500,
 }
 
+impl HttpCode {
+    pub fn to_num(&self) -> u16 {
+        self.to_owned() as u16
+    }
+}
+
 pub type NetResult<T> = Result<T, NetError>;
 
 #[derive(Clone)]
+#[derive(Debug)]
 pub struct NetError {
     pub erc: HttpCode,
     pub details: String
@@ -32,8 +39,8 @@ impl NetError {
     }
 }
 
-impl fmt::Display for NetError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for NetError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{}", self.details)
     }
 }
@@ -53,7 +60,7 @@ impl DogError {
     pub fn new(name: String, details: String) -> Self {
         let s = Self {name, details};
         println!("{}", s.__fmtx());
-        s.__terminate();
+        // s.__terminate();
         s
     }
     
