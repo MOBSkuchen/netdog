@@ -45,8 +45,4 @@ impl HttpResponse {
         }
         [r.into_bytes(), content_vecu8.0.clone()].concat()
     }
-
-    pub fn from_error(nd_error: NetError) -> Self {
-        HttpResponse::new(nd_error.to_erf(), Headers::new(), (vec![], ContentType::NONE))
-    }
 }
