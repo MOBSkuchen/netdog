@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::fs;
-use std::hash::Hash;
 use std::str::FromStr;
 use serde::Deserialize;
-use toml::de::Error;
 use toml::Table;
-use crate::errors::{DogError, DogResult};
+use crate::errors::{DogError, DogResult, NetError};
+use crate::errors::HttpCode::INTERNAL_ERROR;
+use crate::request::Headers;
+use crate::response::{ContentType, HttpResponse};
 
 #[derive(Deserialize)]
 struct Config_toml {
@@ -16,6 +17,7 @@ struct Config_toml {
     pub errors: Table,
 }
 
+#[derive(Clone)]
 pub struct Route {
     name: String,
     path: String,
@@ -39,6 +41,7 @@ impl Route {
     }
 }
 
+#[derive(Clone)]
 pub struct ErrorRoute {
     erc: u16,
     path: String
@@ -62,6 +65,7 @@ impl ErrorRoute {
     }
 }
 
+#[derive(Clone)]
 pub struct Config {
     pub ip: String,
     pub port: u16,
@@ -90,5 +94,29 @@ impl Config {
         let config = config_r.unwrap();
         
         Ok(Config::new(config)?)
+    }
+    
+    pub fn netdog_error(error: DogError) -> HttpResponse {
+        HttpResponse::new((INTERNAL_ERROR, error.name), Headers::new(), (vec![], ContentType::NONE))
+    }
+    
+    pub fn load_content_path(path: String) -> DogResult<Vec<u8>> {
+        let r = fs::read(&path);
+        if r.is_err() {
+            Err(DogError::new("usr-fileread-ctserve".to_string(), format!("Could not load user provided resource at {}", path)))
+        } else {
+            Ok(r.unwrap())
+        }
+    }
+    
+    pub fn try_rout_error(&self, error: NetError) -> HttpResponse {
+        let erc = &(error.erc.clone() as u16);
+        if (&self.errors).contains_key(&erc) {
+            let content = Self::load_content_path(self.errors.get(erc).unwrap().path.clone());
+            if content.is_err() {return Self::netdog_error(content.unwrap_err())}
+            HttpResponse::new((error.erc, error.details), Headers::new(), (content.unwrap(), ContentType::HTML))
+        } else {
+            HttpResponse::new((error.erc, error.details), Headers::new(), (format!("Error {}", erc).into_bytes(), ContentType::HTML))
+        }
     }
 }
