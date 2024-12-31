@@ -67,6 +67,10 @@ impl DogError {
     pub fn __terminate(&self) {
         std::process::exit(1)
     }
+    
+    pub fn print(&self) {
+        println!("{}", self.__fmtx())
+    }
 }
 
 impl Display for DogError {

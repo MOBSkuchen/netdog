@@ -3,6 +3,7 @@ use crate::errors::HttpCode::BAD_REQUEST;
 use crate::errors::{NetError, NetResult};
 
 #[derive(Clone, Debug)]
+#[derive(PartialEq)]
 pub enum Methods {
     GET,
     POST

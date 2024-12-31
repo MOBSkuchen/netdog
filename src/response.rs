@@ -1,4 +1,7 @@
-use crate::errors::{HttpCode, NetError};
+use std::error::Error;
+use std::io::Write;
+use std::net::TcpStream;
+use crate::errors::{DogError, DogResult, HttpCode, NetError};
 use crate::request::Headers;
 
 #[derive(Clone, Eq, PartialEq)]
@@ -44,5 +47,17 @@ impl HttpResponse {
             r += "\n\n";
         }
         [r.into_bytes(), content_vecu8.0.clone()].concat()
+    }
+    
+    fn __send(&self, mut stream: &TcpStream) -> Result<(), ()> {
+        if stream.write(self.make().as_ref()).is_err() {return Err(())}
+        if stream.flush().is_err() {return Err(())}
+        Ok(())
+    }
+    
+    pub fn send(&self, stream: &TcpStream) {
+        if self.__send(&stream).is_err() {
+            DogError::new("con-sendfail-sr".to_string(), "Error while sending response to client".to_string()).print();
+        }
     }
 }
