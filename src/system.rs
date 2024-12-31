@@ -59,7 +59,7 @@ struct Config_toml {
     pub port: Option<u16>,
     pub max_cons: Option<u32>,
     pub routes: Table,
-    pub errors: Table,
+    pub errors: Option<Table>,
 }
 
 #[derive(Clone, Debug)]
@@ -138,12 +138,17 @@ pub struct System {
 
 impl System {
     pub fn new(cfg_t: Config_toml) -> DogResult<Self> {
+        let errors = if cfg_t.errors.is_some() {
+            ErrorRoute::tbljob(cfg_t.errors.unwrap())?
+        } else {
+            HashMap::new()
+        };
         Ok(Self {
             ip: cfg_t.ip,
             port: cfg_t.port.unwrap_or_else(|| { 8080 }),
             max_cons: cfg_t.max_cons.unwrap_or_else(|| { 100 }),
             routes: Route::tbljob(cfg_t.routes)?,
-            errors: ErrorRoute::tbljob(cfg_t.errors)?
+            errors
         })
     }
     
