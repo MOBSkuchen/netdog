@@ -21,11 +21,15 @@ pub struct Logger {
 }
 
 impl Logger {
+    pub fn default() -> Self {
+        Self {write_file: None, do_print: true, deactivated: false}
+    }
+    
     pub fn new(do_print: bool, out_file: Option<String>) -> DogResult<Self> {
         let file = if out_file.is_some() {
             let x = File::open(out_file.clone().unwrap());
             if x.is_ok() {Some(out_file.unwrap())}
-            else {return Err(DogError::new("usr-fileopen-log".into(), "Could not open log file".to_string()))}
+            else {return Err(DogError::fatal(Self::default(), "usr-fileopen-log".into(), "Could not open log file".to_string()))}
         } else { None };
         Ok(Self { write_file: file, do_print, deactivated: false})
     }
@@ -41,7 +45,7 @@ impl Logger {
             let res = writeln!(file, "{}", s);
             if res.is_err() {
                 self.deactivated = true;
-                DogError::fatal("fsw-writelg-log1".to_string(), "Can not write log".to_string());
+                DogError::fatal(self.clone(), "fsw-writelg-log1".to_string(), "Can not write log".to_string());
             }
         }
     }

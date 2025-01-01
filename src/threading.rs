@@ -2,6 +2,7 @@ use std::{
     sync::{mpsc, Arc, Mutex},
     thread,
 };
+use crate::logger::Logger;
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
@@ -11,7 +12,7 @@ pub struct ThreadPool {
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
-    pub fn new(size: usize) -> ThreadPool {
+    pub fn new(logger: &Logger, size: usize) -> ThreadPool {
         assert!(size > 0);
 
         let (sender, receiver) = mpsc::channel();
@@ -21,7 +22,7 @@ impl ThreadPool {
         let mut workers = Vec::with_capacity(size);
 
         for id in 0..size {
-            workers.push(Worker::new(id, Arc::clone(&receiver)));
+            workers.push(Worker::new(logger.clone(), id, Arc::clone(&receiver)));
         }
 
         ThreadPool { workers, sender }
@@ -42,10 +43,10 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+    fn new(mut logger: Logger, id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let thread = thread::spawn(move || {
             while let Ok(job) = receiver.lock().unwrap().recv() {
-                // println!("Worker {id} got a job; executing."); // TODO: Change to logger
+                logger.info(format!("Worker {id} got a job; executing.").as_str()); // TODO: Change to logger
                 job();
             }
         });

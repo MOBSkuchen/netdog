@@ -16,36 +16,35 @@ struct NetDog {
     system: System,
     listener: TcpListener,
     pool: ThreadPool,
-    logger: Logger
 }
 
 impl NetDog {
     pub fn new(cfg_file_path: String) -> Self {
         let system_r = System::from_file(cfg_file_path);
         if system_r.is_err() { DogError::__terminate(); }
-        let (system, logger) = system_r.unwrap();
+        let system = system_r.unwrap();
 
         let addr = format!("{}:{:?}", system.ip, system.port);
         println!("Running on {}", addr);
 
         let listener = TcpListener::bind(addr).unwrap();
-        let pool = ThreadPool::new(system.max_cons as usize);
+        let pool = ThreadPool::new(&system.logger, system.max_cons as usize);
 
-        Self { system, listener, pool, logger}
+        Self { system, listener, pool}
     }
 
     fn start(&self) {
         for stream in self.listener.incoming() {
             let stream = stream.unwrap();
             let sys = self.system.clone();
-            let log = self.logger.clone();
+            let log = self.system.logger.clone();
             self.pool.execute(|| {
                 NetDog::handle_connection(stream, sys, log);
             });
         }
     }
 
-    fn handle_connection(stream: TcpStream, system: System, logger: Logger) {
+    fn handle_connection(stream: TcpStream, mut system: System, logger: Logger) {
         let buf_reader = BufReader::new(&stream);
         let http_request: Vec<_> = buf_reader
             .lines()
@@ -55,9 +54,9 @@ impl NetDog {
 
         let request_r = HttpRequest::from_raw(http_request);
         if request_r.is_err() {
-            system.route_error(request_r.unwrap_err()).send(&stream);
+            system.route_error(request_r.unwrap_err()).send(logger, &stream);
         } else {
-            system.route(request_r.unwrap()).send(&stream);
+            system.route(request_r.unwrap()).send(logger, &stream);
         }
     }
 }

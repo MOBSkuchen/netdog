@@ -1,7 +1,7 @@
-use std::error::Error;
 use std::io::Write;
 use std::net::TcpStream;
-use crate::errors::{DogError, DogResult, HttpCode, NetError};
+use crate::errors::{DogError, HttpCode};
+use crate::logger::Logger;
 use crate::request::Headers;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -139,9 +139,9 @@ impl HttpResponse {
         Ok(())
     }
     
-    pub fn send(&self, stream: &TcpStream) {
+    pub fn send(&self, logger: Logger, stream: &TcpStream) {
         if self.__send(&stream).is_err() {
-            DogError::new("con-sendfail-sr".to_string(), "Error while sending response to client".to_string()).print();
+            DogError::new(logger, "con-sendfail-sr".to_string(), "Error while sending response to client".to_string()).print();
         }
     }
 }
