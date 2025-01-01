@@ -1,4 +1,5 @@
-use std::fs::{File, OpenOptions};
+use std::fs;
+use std::fs::{OpenOptions};
 use std::io::Write;
 use crate::errors::{DogError, DogResult};
 extern crate chrono;
@@ -27,7 +28,7 @@ impl Logger {
     
     pub fn new(do_print: bool, out_file: Option<String>) -> DogResult<Self> {
         let file = if out_file.is_some() {
-            let x = File::open(out_file.clone().unwrap());
+            let x = fs::write(out_file.clone().unwrap(), &*vec![]);
             if x.is_ok() {Some(out_file.unwrap())}
             else {return Err(DogError::fatal(Self::default(), "usr-fileopen-log".into(), "Could not open log file".to_string()))}
         } else { None };
