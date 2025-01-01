@@ -12,6 +12,10 @@ use crate::system::System;
 use crate::request::{HttpRequest};
 use crate::threading::ThreadPool;
 
+pub fn print_addr(addr: &str) {
+    println!("Running on http://\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", addr, addr)
+}
+
 struct NetDog {
     system: System,
     listener: TcpListener,
@@ -25,7 +29,7 @@ impl NetDog {
         let system = system_r.unwrap();
 
         let addr = format!("{}:{:?}", system.ip, system.port);
-        println!("Running on {}", addr);
+        print_addr(addr.as_str());
 
         let listener = TcpListener::bind(addr).unwrap();
         let pool = ThreadPool::new(&system.logger, system.max_cons as usize);
