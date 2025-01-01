@@ -6,6 +6,7 @@ use serde::Deserialize;
 use toml::{Table};
 use crate::errors::{DogError, DogResult, HttpCode, NetError, NetResult};
 use crate::errors::HttpCode::{INTERNAL_ERROR, NOT_FOUND};
+use crate::logger::Logger;
 use crate::request::{Headers, HttpRequest, Methods};
 use crate::response::{ContentType, HttpResponse};
 use crate::response::ContentType::HTML;
@@ -58,8 +59,21 @@ struct Config_toml {
     pub ip: String,
     pub port: Option<u16>,
     pub max_cons: Option<u32>,
+    pub logger: Option<LoggerCfg>,
     pub routes: Table,
     pub errors: Option<Table>,
+}
+
+#[derive(Deserialize)]
+struct LoggerCfg {
+    print: Option<bool>,
+    log_file: Option<String>
+}
+
+impl LoggerCfg {
+    pub fn default() -> Self {
+        Self {print: Some(true), log_file: None}
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -127,7 +141,7 @@ impl ErrorRoute {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct System {
     pub ip: String,
     pub port: u16,
@@ -137,26 +151,28 @@ pub struct System {
 }
 
 impl System {
-    pub fn new(cfg_t: Config_toml) -> DogResult<Self> {
+    pub fn new(cfg_t: Config_toml) -> DogResult<(Self, Logger)> {
         let errors = if cfg_t.errors.is_some() {
             ErrorRoute::tbljob(cfg_t.errors.unwrap())?
         } else {
             HashMap::new()
         };
-        Ok(Self {
+        let logger_cfg = cfg_t.logger.or_else(|| {Some(LoggerCfg::default())}).unwrap();
+        let logger = Logger::new(logger_cfg.print.is_some_and(|t| {t}), logger_cfg.log_file.or_else(|| {None}));
+        Ok((Self {
             ip: cfg_t.ip,
             port: cfg_t.port.unwrap_or_else(|| { 8080 }),
             max_cons: cfg_t.max_cons.unwrap_or_else(|| { 100 }),
             routes: Route::tbljob(cfg_t.routes)?,
             errors
-        })
+        }, logger?))
     }
     
-    pub fn from_file(path: String) -> DogResult<Self> {
+    pub fn from_file(path: String) -> DogResult<(Self, Logger)> {
         let file_contents_r = fs::read_to_string(&path);
         if file_contents_r.is_err() {return Err(DogError::new("usr-fileread-cfgld".to_string(), format!("Could not read file '{}'", path)))}
         let config_r = toml::from_str(file_contents_r.unwrap().as_str());
-        if config_r.is_err() {return Err::<System, DogError>(DogError::new("usr-toml-cfgld".to_string(), format!("Config file at '{}' could not be parsed", path)))}
+        if config_r.is_err() {return Err::<(System, Logger), DogError>(DogError::new("usr-toml-cfgld".to_string(), format!("Config file at '{}' could not be parsed", path)))}
         
         let config = config_r.unwrap();
         

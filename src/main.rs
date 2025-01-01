@@ -6,6 +6,8 @@ mod system;
 mod logger;
 
 use std::{fs, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}};
+use crate::errors::DogError;
+use crate::logger::Logger;
 use crate::system::System;
 use crate::request::{HttpRequest};
 use crate::threading::ThreadPool;
@@ -13,37 +15,37 @@ use crate::threading::ThreadPool;
 struct NetDog {
     system: System,
     listener: TcpListener,
-    pool: ThreadPool
+    pool: ThreadPool,
+    logger: Logger
 }
 
 impl NetDog {
     pub fn new(cfg_file_path: String) -> Self {
         let system_r = System::from_file(cfg_file_path);
-        if system_r.is_err() {
-            (&system_r).to_owned().unwrap_err().__terminate();
-        }
-        let system = system_r.unwrap();
+        if system_r.is_err() { DogError::__terminate(); }
+        let (system, logger) = system_r.unwrap();
 
         let addr = format!("{}:{:?}", system.ip, system.port);
         println!("Running on {}", addr);
-        
+
         let listener = TcpListener::bind(addr).unwrap();
         let pool = ThreadPool::new(system.max_cons as usize);
-        
-        Self { system, listener, pool}
+
+        Self { system, listener, pool, logger}
     }
-    
+
     fn start(&self) {
         for stream in self.listener.incoming() {
             let stream = stream.unwrap();
-            let system = self.system.clone();
+            let sys = self.system.clone();
+            let log = self.logger.clone();
             self.pool.execute(|| {
-                NetDog::handle_connection(stream, system);
-            })
+                NetDog::handle_connection(stream, sys, log);
+            });
         }
     }
-    
-    fn handle_connection(stream: TcpStream, system: System) {
+
+    fn handle_connection(stream: TcpStream, system: System, logger: Logger) {
         let buf_reader = BufReader::new(&stream);
         let http_request: Vec<_> = buf_reader
             .lines()

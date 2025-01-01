@@ -66,10 +66,10 @@ impl DogError {
     pub fn fatal(name: String, details: String) {
         let s = Self {name, details};
         println!("{}", s.__fmtx());
-        s.__terminate();
+        Self::__terminate();
     }
     
-    pub fn __terminate(&self) {
+    pub fn __terminate() {
         std::process::exit(1)
     }
     
