@@ -83,7 +83,7 @@ fn main() {
         return;
     } else if args.len() > 1 && args[1].clone().to_lowercase() == "version" {
         return;
-    } else {
+    } else if args.len() > 1 && !fs::exists(args[1].clone()).unwrap() {
         println!("Tip: The default config file is config.toml\nUse ´netdog <my-config.toml>´ to specify your own");
     }
     let netdog = NetDog::new(config_path);
