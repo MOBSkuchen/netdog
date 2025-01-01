@@ -3,6 +3,7 @@ mod threading;
 mod request;
 mod response;
 mod system;
+mod logger;
 
 use std::{fs, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}};
 use crate::system::System;

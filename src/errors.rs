@@ -60,8 +60,13 @@ impl DogError {
     pub fn new(name: String, details: String) -> Self {
         let s = Self {name, details};
         println!("{}", s.__fmtx());
-        // s.__terminate();
         s
+    }
+    
+    pub fn fatal(name: String, details: String) {
+        let s = Self {name, details};
+        println!("{}", s.__fmtx());
+        s.__terminate();
     }
     
     pub fn __terminate(&self) {
