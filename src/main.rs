@@ -12,8 +12,11 @@ use crate::system::System;
 use crate::request::{HttpRequest};
 use crate::threading::ThreadPool;
 
-pub fn print_addr(addr: &str) {
-    println!("Running on http://\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", addr, addr)
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+
+pub fn make_link(prefix: &str, addr: &str) -> String {
+    format!("{}://\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", prefix, addr, addr)
 }
 
 struct NetDog {
@@ -29,7 +32,7 @@ impl NetDog {
         let system = system_r.unwrap();
 
         let addr = format!("{}:{:?}", system.ip, system.port);
-        print_addr(addr.as_str());
+        println!("Running on {}", make_link("http", addr.as_str()));
 
         let listener = TcpListener::bind(addr).unwrap();
         let pool = ThreadPool::new(&system.logger, system.max_cons as usize);
@@ -66,10 +69,22 @@ impl NetDog {
 }
 
 fn main() {
+    println!("Netdog v{VERSION} - by MOBSkuchen");
     let args = std::env::args().collect::<Vec<String>>();
     let mut config_path = "config.toml".to_string();
+    // I know that this is suboptimal, but I hope that LLVM will optimize it for me
     if args.len() > 1 && fs::exists(args[1].clone()).unwrap() {
         config_path = args[1].clone();
+    } else if args.len() > 1 && args[1].clone().to_lowercase() == "help" {
+        println!("Not enough help? More at {}", make_link("https", "github.com/MOBSkuchen/netdog"));
+        println!("Usage | ´netdog´ or ´netdog <my-config.toml>´");
+        println!("  OR  | ´netdog help´ or ´netdog version´");
+        println!("If you don't specify your config file path, it will default to 'config.toml'");
+        return;
+    } else if args.len() > 1 && args[1].clone().to_lowercase() == "version" {
+        return;
+    } else {
+        println!("Tip: The default config file is config.toml\nUse ´netdog <my-config.toml>´ to specify your own");
     }
     let netdog = NetDog::new(config_path);
     netdog.start();
