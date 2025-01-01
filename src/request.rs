@@ -90,8 +90,4 @@ impl HttpRequest {
 
         Ok(Self {method, protocol_v, path, headers: headers.clone(), body: vec![], host: headers.get("Host").cloned()})
     }
-
-    pub fn set_body(&mut self, body: Vec<u8>) {
-        self.body = body
-    }
 }

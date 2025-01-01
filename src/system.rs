@@ -92,7 +92,7 @@ impl Route {
             if t.contains_key("method") {
             Methods::from_str(t.get("method").unwrap().as_str().unwrap())
                 .map(|t1| {vec![t1]}).
-                or_else(|e| {
+                or_else(|_e| {
                     return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Ill formatted key 'method'".to_string()))
                 }) }
             else if t.contains_key("methods") {
@@ -101,7 +101,7 @@ impl Route {
                 if v.is_none() {
                     return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Ill formatted key 'methods'".to_string()))
                 }
-                Methods::from_str_mult(v.unwrap()).or_else(|e1|
+                Methods::from_str_mult(v.unwrap()).or_else(|_e1|
                     Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Ill formatted key 'methods'".to_string()))
                 )
             } else { return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Missing key 'method' or 'methods'".to_string())) };

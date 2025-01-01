@@ -34,10 +34,6 @@ impl NetError {
         let details_x = if details.is_some() {details.unwrap()} else {"No details provided".to_string()};
         Self {erc, details: details_x}
     }
-
-    pub fn to_erf(&self) -> (HttpCode, String) {
-        (self.erc.clone(), self.details.clone())
-    }
 }
 
 impl Display for NetError {
