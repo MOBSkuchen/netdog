@@ -6,7 +6,7 @@ use chrono::Local;
 
 const DATE_FORMAT_STR: &'static str = "%Y-%m-%d %H:%M:%S";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LogLevel {
     INFO,
     ERROR,

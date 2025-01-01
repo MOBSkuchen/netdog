@@ -203,7 +203,7 @@ impl System {
             if content.is_err() {return self.netdog_error(content.unwrap_err())}
             HttpResponse::new((error.erc, error.details), Headers::new(), (content.unwrap(), ContentType::from_file_name(&*r_fn)))
         } else {
-            HttpResponse::new((error.erc, error.details), Headers::new(), (format!("Error {}", erc).into_bytes(), ContentType::HTML))
+            HttpResponse::new((error.erc, error.details), Headers::new(), (format!("Error {}", erc).into_bytes(), HTML))
         }
     }
 
@@ -214,8 +214,15 @@ impl System {
     }
 
     pub fn route(&mut self, req: HttpRequest) -> HttpResponse {
-        let response = url_resolve_mult(&self.routes.values().map(|a| {a.to_owned()}).collect::<Vec<Route>>(), &*req.path, req.method);
-        if response.is_err() {self.route_error(response.unwrap_err())}
-        else {self.route_to_response(response.unwrap())}
+        let response = url_resolve_mult(&self.routes.values().map(|a| {a.to_owned()}).collect::<Vec<Route>>(), &*req.path, req.method.clone());
+        if response.is_err() {
+            self.logger.info(format!("No route available for < {} > -> responding with error", req.format()).as_str());
+            self.route_error(response.unwrap_err())
+        }
+        else {
+            let resp = response.unwrap();
+            self.logger.info(format!("Routing < {} > -> {}", req.format(), resp.path).as_str());
+            self.route_to_response(resp)
+        }
     }
 }

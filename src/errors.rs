@@ -1,7 +1,7 @@
 use std::cmp::PartialEq;
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use crate::logger::Logger;
+use crate::logger::{LogLevel, Logger};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum HttpCode {
@@ -52,7 +52,8 @@ pub type DogResult<T> = Result<T, DogError>;
 pub struct DogError {
     pub name: String,
     pub details: String,
-    logger: Logger
+    logger: Logger,
+    log_level: LogLevel
 }
 
 impl DogError {
@@ -61,13 +62,13 @@ impl DogError {
     }
     
     pub fn new(logger: Logger, name: String, details: String) -> Self {
-        let s = Self {name, details, logger};
+        let mut s = Self {name, details, logger, log_level: LogLevel::ERROR};
         s.print();
         s
     }
     
     pub fn fatal(logger: Logger, name: String, details: String) -> Self {
-        let s = Self {name, details, logger};
+        let mut s = Self {name, details, logger, log_level: LogLevel::FATAL};
         s.print();
         Self::__terminate();
         s
@@ -77,8 +78,8 @@ impl DogError {
         std::process::exit(1)
     }
     
-    pub fn print(&self) {
-        println!("{}", self.__fmtx())
+    pub fn print(&mut self) {
+        self.logger.log(self.log_level.clone(), &*self.__fmtx())
     }
 }
 

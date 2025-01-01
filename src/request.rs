@@ -44,14 +44,19 @@ pub struct HttpRequest {
     protocol_v: String,
     pub path: String,
     pub headers: Headers,
-    pub body: Vec<u8>
+    pub body: Vec<u8>,
+    pub host: Option<String>
 }
 
 impl HttpRequest {
     pub fn new(method: Methods,
                protocol_v: String,
                path: String) -> Self {
-        Self {method, protocol_v, path, headers: Default::default(), body: vec![]}
+        Self {method, protocol_v, path, headers: Default::default(), body: vec![], host: None}
+    }
+    
+    pub fn format(&self) -> String {
+        format!("{:?} {} ({})", self.method, self.path, self.host.clone().or_else(|| {Some("None".to_string())}).unwrap())
     }
 
     pub fn mk_headers(lns: Vec<String>) -> NetResult<Headers> {
@@ -83,7 +88,7 @@ impl HttpRequest {
 
         let headers = Self::mk_headers(req_lines)?;
 
-        Ok(Self {method, protocol_v, path, headers, body: vec![]})
+        Ok(Self {method, protocol_v, path, headers: headers.clone(), body: vec![], host: headers.get("Host").cloned()})
     }
 
     pub fn set_body(&mut self, body: Vec<u8>) {
