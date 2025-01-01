@@ -4,7 +4,7 @@ use crate::errors::{DogError, DogResult};
 extern crate chrono;
 use chrono::Local;
 
-const DATE_FORMAT_STR: &'static str = "%Y-%m-%d][%H:%M:%S";
+const DATE_FORMAT_STR: &'static str = "%Y-%m-%d %H:%M:%S";
 
 #[derive(Debug)]
 pub enum LogLevel {
