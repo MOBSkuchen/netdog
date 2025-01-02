@@ -1,10 +1,11 @@
 use std::io::Write;
 use std::net::TcpStream;
+use serde::{Deserialize, Serialize};
 use crate::errors::{DogError, HttpCode};
 use crate::logger::Logger;
 use crate::request::Headers;
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum ContentType {
     HTML,
     JSON,
@@ -65,12 +66,9 @@ impl ContentType {
             ContentType::UNKNOWN => "application/octet-stream",
         }.to_string()
     }
-
-    pub fn from_file_name(file_name: &str) -> ContentType {
-        if !file_name.contains(".") { return ContentType::UNKNOWN }
-        let mut splitter = file_name.splitn(2, ".");
-        splitter.next().unwrap();
-        match splitter.next().unwrap().to_lowercase().as_str() {
+    
+    pub fn from_ext(ext: &str) -> ContentType {
+        match ext.to_lowercase().as_str() {
             "html" | "htm" => ContentType::HTML,
             "json" => ContentType::JSON,
             "xml" => ContentType::XML,
@@ -99,8 +97,17 @@ impl ContentType {
             _ => ContentType::UNKNOWN,
         }
     }
+
+    pub fn from_file_name(file_name: &str) -> ContentType {
+        if !file_name.contains(".") { return ContentType::UNKNOWN }
+        let mut splitter = file_name.splitn(2, ".");
+        splitter.next().unwrap();
+        Self::from_ext(splitter.next().unwrap())
+    }
 }
 
+#[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct HttpResponse {
     protocol_v: String,
     response: (HttpCode, String),

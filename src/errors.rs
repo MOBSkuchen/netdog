@@ -1,9 +1,10 @@
 use std::cmp::PartialEq;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use serde::{Deserialize, Serialize};
 use crate::logger::{LogLevel, Logger};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum HttpCode {
     OK = 200,
     BAD_REQUEST = 400,
@@ -17,6 +18,19 @@ pub enum HttpCode {
 impl HttpCode {
     pub fn to_num(&self) -> u16 {
         self.to_owned() as u16
+    }
+    
+    pub fn from_num(num: u16) -> Option<Self> {
+        match num {
+            200 => Some(HttpCode::OK),
+            400 => Some(HttpCode::BAD_REQUEST),
+            401 => Some(HttpCode::UNAUTHORIZED),
+            403 => Some(HttpCode::FORBIDDEN),
+            404 => Some(HttpCode::NOT_FOUND),
+            405 => Some(HttpCode::METHOD_NOT_ALLOWD),
+            500 => Some(HttpCode::INTERNAL_ERROR),
+            _ => None
+        }
     }
 }
 

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 use crate::errors::HttpCode::BAD_REQUEST;
 use crate::errors::{NetError, NetResult};
 
-#[derive(Clone, Debug)]
-#[derive(PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Methods {
     GET,
     POST
@@ -38,7 +38,7 @@ fn split_once(in_string: &str) -> Result<(&str, &str), NetError> {
     Ok((first, second))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HttpRequest {
     pub method: Methods,
     protocol_v: String,

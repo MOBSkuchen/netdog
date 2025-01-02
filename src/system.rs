@@ -10,6 +10,7 @@ use crate::logger::Logger;
 use crate::request::{Headers, HttpRequest, Methods};
 use crate::response::{ContentType, HttpResponse};
 use crate::response::ContentType::HTML;
+use crate::script::{Script, ScriptLoader};
 
 fn unwrap_or_error<T>(results: Vec<Option<T>>) -> Option<Vec<T>> {
     let mut unwrapped = Vec::new();
@@ -43,6 +44,7 @@ fn url_resolve(route: &Route, url: &str, method: &Methods) -> Result<Route, ()> 
         url: route.url.clone(),
         methods: route.methods.clone(),
         name: (&route).name.clone().into(),
+        path_is_script: route.path_is_script
     })
 }
 
@@ -62,6 +64,7 @@ struct Config_toml {
     pub logger: Option<LoggerCfg>,
     pub routes: Table,
     pub errors: Option<Table>,
+    pub scripts: Option<Table>
 }
 
 #[derive(Deserialize)]
@@ -81,12 +84,19 @@ pub struct Route {
     name: String,
     path: String,
     url: String,
-    methods: Vec<Methods>
+    methods: Vec<Methods>,
+    path_is_script: bool
 }
 
 impl Route {
     pub fn new(logger: Logger, name: String, t: Table) -> DogResult<Self> {
-        if !t.contains_key("path") {return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Missing key 'path'".to_string()))}
+        let (path, path_is_script) = if t.contains_key("path") {
+            (t.get("path").unwrap().as_str().unwrap().to_string(), false)
+        } else if t.contains_key("script") {
+            (t.get("script").unwrap().as_str().unwrap().to_string(), true)
+        } else {
+            return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Missing key 'path' or 'script'".to_string()))
+        };
         if !t.contains_key("url") {return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Missing key 'url'".to_string()))}
         let methods =
             if t.contains_key("method") {
@@ -106,7 +116,7 @@ impl Route {
                 )
             } else { return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Missing key 'method' or 'methods'".to_string())) };
 
-        Ok(Self {name, path: t.get("path").unwrap().as_str().unwrap().to_string(), url: t.get("url").unwrap().as_str().unwrap().to_string(), methods: methods?})
+        Ok(Self {name, path, url: t.get("url").unwrap().as_str().unwrap().to_string(), methods: methods?, path_is_script})
     }
     
     pub fn tbljob(logger: Logger, t: Table) -> DogResult<HashMap<String, Route>> {
@@ -149,6 +159,7 @@ pub struct System {
     pub routes: HashMap<String, Route>,
     pub errors: HashMap<u16, ErrorRoute>,
     pub logger: Logger,
+    pub script_loader: ScriptLoader
 }
 
 impl System {
@@ -160,13 +171,32 @@ impl System {
         } else {
             HashMap::new()
         };
+        let mut scripts = HashMap::new();
+        if cfg_t.scripts.is_some() {
+            for script in cfg_t.scripts.unwrap() {
+                let sr = script.1.as_table();
+                if sr.is_none() {
+                    return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Could not parse scripts".to_string()))
+                }
+                let s = sr.unwrap();
+                if !s.contains_key("path") {
+                    return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Missing key 'path'".to_string()))
+                }
+                let l = s.get("path").unwrap().as_str();
+                if l.is_none() {
+                    return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Ill formatted key 'path'".to_string()))
+                }
+                scripts.insert(script.0, l.unwrap().to_string());
+            }
+        }
         Ok(Self {
             ip: cfg_t.ip,
             port: cfg_t.port.unwrap_or_else(|| { 8080 }),
             max_cons: cfg_t.max_cons.unwrap_or_else(|| { 100 }),
             routes: Route::tbljob(logger.clone(), cfg_t.routes)?,
             errors,
-            logger
+            logger: logger.clone(),
+            script_loader: ScriptLoader::new(logger, scripts)?
         })
     }
     
@@ -220,9 +250,18 @@ impl System {
             self.route_error(response.unwrap_err())
         }
         else {
-            let resp = response.unwrap();
-            self.logger.info(format!("Routing < {} > -> {}", req.format(), resp.path).as_str());
-            self.route_to_response(resp)
+            let route = response.unwrap();
+            if route.path_is_script {
+                let ret = self.script_loader.run_script(&route.name, req);
+                return if ret.is_err() {
+                    self.logger.error(format!("Got an error from script {}", route.name).as_str());
+                    self.netdog_error(ret.unwrap_err())
+                } else {
+                    ret.unwrap()
+                }
+            }
+            self.logger.info(format!("Routing < {} > -> {}", req.format(), route.path).as_str());
+            self.route_to_response(route)
         }
     }
 }

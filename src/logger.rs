@@ -4,6 +4,8 @@ use std::io::Write;
 use crate::errors::{DogError, DogResult};
 extern crate chrono;
 use chrono::Local;
+use mlua::{FromLua, UserData};
+use serde::{Deserialize, Serialize};
 
 const DATE_FORMAT_STR: &'static str = "%Y-%m-%d %H:%M:%S";
 
@@ -14,12 +16,14 @@ pub enum LogLevel {
     FATAL
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Logger {
-    write_file: Option<String>,
-    do_print: bool,
+    pub write_file: Option<String>,
+    pub do_print: bool,
     deactivated: bool,
 }
+
+impl UserData for Logger {}
 
 impl Logger {
     pub fn default() -> Self {

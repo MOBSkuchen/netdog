@@ -4,6 +4,7 @@ mod request;
 mod response;
 mod system;
 mod logger;
+mod script;
 
 use std::{fs, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}};
 use crate::errors::DogError;
