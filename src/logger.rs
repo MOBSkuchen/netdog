@@ -32,9 +32,12 @@ impl Logger {
     
     pub fn new(do_print: bool, out_file: Option<String>) -> DogResult<Self> {
         let file = if out_file.is_some() {
-            let x = fs::write(out_file.clone().unwrap(), &*vec![]);
-            if x.is_ok() {Some(out_file.unwrap())}
-            else {return Err(DogError::fatal(Self::default(), "usr-fileopen-log".into(), "Could not open log file".to_string()))}
+            if fs::exists(out_file.clone().unwrap()).unwrap() {Some(out_file.unwrap())}
+            else {
+                let x = fs::write(out_file.clone().unwrap(), &*vec![]);
+                if x.is_ok() {Some(out_file.unwrap())}
+                else {return Err(DogError::fatal(Self::default(), "usr-fileopen-log".into(), "Could not open log file".to_string()))}
+            }
         } else { None };
         Ok(Self { write_file: file, do_print, deactivated: false})
     }
@@ -76,7 +79,7 @@ impl Logger {
     pub fn info(&mut self, message: &str) {
         self.log(LogLevel::INFO, message);
     }
-    
+
     pub fn fatal(&mut self, message: &str) {
         self.log(LogLevel::FATAL, message);
         DogError::__terminate();
