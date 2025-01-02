@@ -71,13 +71,13 @@ fn _lua_log_info(lua: &Lua, msg: String) -> Result<(), LuaError> {
 
 fn _lua_log_error(lua: &Lua, msg: String) -> Result<(), LuaError> {
     let mut logger = _mk_logger(lua)?;
-    logger.info(msg.as_str());
+    logger.error(msg.as_str());
     Ok(())
 }
 
 fn _lua_log_fatal(lua: &Lua, msg: String) -> Result<(), LuaError> {
     let mut logger = _mk_logger(lua)?;
-    logger.info(msg.as_str());
+    logger.fatal(msg.as_str());
     Ok(())
 }
 

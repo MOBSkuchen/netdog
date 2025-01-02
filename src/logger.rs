@@ -76,4 +76,9 @@ impl Logger {
     pub fn info(&mut self, message: &str) {
         self.log(LogLevel::INFO, message);
     }
+    
+    pub fn fatal(&mut self, message: &str) {
+        self.log(LogLevel::FATAL, message);
+        DogError::__terminate();
+    }
 }
