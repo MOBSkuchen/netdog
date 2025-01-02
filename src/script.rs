@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::sync::{Arc, Mutex};
 use mlua;
-use mlua::{Compiler, Function, Lua, ObjectLike, StdLib, Table, UserData};
+use mlua::{Function, Lua, ObjectLike, StdLib, Table, UserData};
 use mlua::prelude::LuaError;
 use crate::errors::{DogError, DogResult, HttpCode};
 use crate::logger::Logger;
@@ -84,7 +84,7 @@ fn _lua_log_fatal(lua: &Lua, msg: String) -> Result<(), LuaError> {
 impl ScriptLoader {
     pub fn new(logger: Logger, script_locs: HashMap<String, String>) -> DogResult<Self> {
         let lua = Lua::new();
-        lua.sandbox(true).unwrap();
+        lua.load_std_libs(StdLib::ALL_SAFE).expect("Panic on Lua load stdlib");
         let globals = lua.globals();
         // Logging stuff
         if (&logger).write_file.is_some() { globals.set("__logger_file", logger.write_file.clone().unwrap().to_owned()).expect("Panic on Lua globals init"); }
