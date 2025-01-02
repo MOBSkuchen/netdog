@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::sync::{Arc, Mutex};
 use mlua;
-use mlua::{Function, Lua, ObjectLike, StdLib, Table, UserData};
+use mlua::{Compiler, Function, Lua, ObjectLike, StdLib, Table, UserData};
 use mlua::prelude::LuaError;
 use crate::errors::{DogError, DogResult, HttpCode};
 use crate::logger::Logger;
@@ -86,10 +86,10 @@ impl ScriptLoader {
         let lua = Lua::new();
         lua.sandbox(true).unwrap();
         let globals = lua.globals();
-        if (&logger).write_file.is_some() {
-            globals.set("__logger_file", logger.write_file.clone().unwrap().to_owned()).expect("Panic on Lua globals init");
-        }
+        // Logging stuff
+        if (&logger).write_file.is_some() { globals.set("__logger_file", logger.write_file.clone().unwrap().to_owned()).expect("Panic on Lua globals init"); }
         globals.set("__logger_print", logger.do_print).expect("Panic on Lua globals init");
+        // Included functions
         globals.set("read".to_string(), lua.create_function(_lua_read).unwrap()).expect("Panic on Lua globals init");
         globals.set("write".to_string(), lua.create_function(_lua_write).unwrap()).expect("Panic on Lua globals init");
         globals.set("log_info".to_string(), lua.create_function(_lua_log_info).unwrap()).expect("Panic on Lua globals init");
