@@ -119,12 +119,17 @@ impl Route {
         Ok(Self {name, path, url: t.get("url").unwrap().as_str().unwrap().to_string(), methods: methods?, path_is_script})
     }
     
-    pub fn tbljob(logger: Logger, t: Table) -> DogResult<HashMap<String, Route>> {
-        let mut hm = HashMap::new();
+    pub fn tbljob(logger: Logger, t: Table) -> DogResult<(HashMap<String, Route>, HashMap<String, String>)> {
+        let mut hm_r = HashMap::new();
+        let mut hm_s = HashMap::new();
         for x in t.keys() {
-            hm.insert(x.to_string(), Route::new(logger.clone(), x.to_string(), t.get(x).unwrap().as_table().unwrap().clone())?);
+            let rt = Route::new(logger.clone(), x.to_string(), t.get(x).unwrap().as_table().unwrap().clone())?;
+            hm_r.insert(x.to_string(), rt.clone());
+            if rt.path_is_script {
+                hm_s.insert(rt.name, rt.path);
+            }
         }
-        Ok(hm)
+        Ok((hm_r, hm_s))
     }
 }
 
@@ -171,29 +176,12 @@ impl System {
         } else {
             HashMap::new()
         };
-        let mut scripts = HashMap::new();
-        if cfg_t.scripts.is_some() {
-            for script in cfg_t.scripts.unwrap() {
-                let sr = script.1.as_table();
-                if sr.is_none() {
-                    return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Could not parse scripts".to_string()))
-                }
-                let s = sr.unwrap();
-                if !s.contains_key("path") {
-                    return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Missing key 'path'".to_string()))
-                }
-                let l = s.get("path").unwrap().as_str();
-                if l.is_none() {
-                    return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Ill formatted key 'path'".to_string()))
-                }
-                scripts.insert(script.0, l.unwrap().to_string());
-            }
-        }
+        let (routes, scripts) = Route::tbljob(logger.clone(), cfg_t.routes)?;
         Ok(Self {
             ip: cfg_t.ip,
             port: cfg_t.port.unwrap_or_else(|| { 8080 }),
             max_cons: cfg_t.max_cons.unwrap_or_else(|| { 100 }),
-            routes: Route::tbljob(logger.clone(), cfg_t.routes)?,
+            routes,
             errors,
             logger: logger.clone(),
             script_loader: ScriptLoader::new(logger, scripts)?
