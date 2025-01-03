@@ -5,7 +5,7 @@
 
 Netdog can do all of that and more!
 
-## Setting up
+## Getting started
 If you're on windows you can download Netdog from the releases page.
 
 Or (for other platforms), you can build it from source.
@@ -36,3 +36,45 @@ path = "errors/error_404.html"              # REQUIRED | Path to serve from.
 ```
 
 Then run `netdog my-config.toml` or `netdog` (config file path defaults to *config.toml*)
+
+## Dynamic loading
+Instead of serving a static file, netdog can run a lua program serve its output.
+
+Just provide the path to a lua file as a script in your route.
+```toml
+[routes.main]
+methods = ["GET"]
+url = "/*"
+script = "main_page.lua"
+```
+Your lua program gets treated as a function:
+```lua
+ret = {
+ ["code"] = 200,
+ ["resp"] = "OK",
+ ["headers"] = {},
+ ["content"] = read("logfile.log"),
+ ["type"] = "html"
+}
+log_info("Hi (triggered from Lua)")
+return ret
+```
+### Response format
+The program must return a table in this format:
+- code: u16
+- resp: string,
+- headers: string = string,
+- content: string,
+- type: string (mine type)
+### Provided functions
+Additionally, netdog provides the program with the following functions:
+- read(file_path: string) -> string
+  - Reads a file to a string
+- write(file_path: string, content: string) -> nil
+  - Writes a string to a file
+- log_info(message: string) -> nil
+  - Logs a message as an info
+- log_error(message: string) -> nil
+  - Logs a message as an error
+- log_fatal(message: string) -> nil
+  - Logs a message as a fatal error and terminates the program
