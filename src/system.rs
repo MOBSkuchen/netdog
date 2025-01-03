@@ -10,7 +10,7 @@ use crate::logger::Logger;
 use crate::request::{Headers, HttpRequest, Methods};
 use crate::response::{ContentType, HttpResponse};
 use crate::response::ContentType::HTML;
-use crate::script::{Script, ScriptLoader};
+use crate::script::{ScriptLoader};
 
 fn unwrap_or_error<T>(results: Vec<Option<T>>) -> Option<Vec<T>> {
     let mut unwrapped = Vec::new();
@@ -59,6 +59,7 @@ fn url_resolve_mult(routes: &[Route], url: &str, method: Methods) -> NetResult<R
 #[derive(Deserialize)]
 struct Config_toml {
     pub ip: String,
+    pub cwd: Option<String>,
     pub port: Option<u16>,
     pub max_cons: Option<u32>,
     pub logger: Option<LoggerCfg>,
@@ -169,6 +170,11 @@ pub struct System {
 
 impl System {
     pub fn new(cfg_t: Config_toml) -> DogResult<Self> {
+        if cfg_t.cwd.is_some() {
+            std::env::set_current_dir(cfg_t.cwd.unwrap().as_str()).or_else(|e| {
+                Err(DogError::new(Logger::default(), "usr-cfgensure-setcwd".to_string(), "Failed to set CWD".to_string()))
+            })?
+        }
         let logger_cfg = cfg_t.logger.or_else(|| {Some(LoggerCfg::default())}).unwrap();
         let logger = Logger::new(logger_cfg.print.is_some_and(|t| {t}), logger_cfg.log_file.or_else(|| {None}))?;
         let errors = if cfg_t.errors.is_some() {
