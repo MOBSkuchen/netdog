@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use crate::errors::HttpCode::BAD_REQUEST;
+use crate::errors::HttpCode::BadRequest;
 use crate::errors::{NetError, NetResult};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -32,7 +32,7 @@ pub type Headers = HashMap<String, String>;
 
 fn split_once(in_string: &str) -> Result<(&str, &str), NetError> {
     let mut splitter = in_string.splitn(2, ": ");
-    if splitter.clone().count() < 2 {return Err(NetError::new(BAD_REQUEST, None))}
+    if splitter.clone().count() < 2 {return Err(NetError::new(BadRequest, None))}
     let first = splitter.next().unwrap();
     let second = splitter.next().unwrap();
     Ok((first, second))
@@ -71,13 +71,13 @@ impl HttpRequest {
     }
 
     pub fn from_raw(mut req_lines: Vec<String>) -> NetResult<Self> {
-        if (&req_lines).is_empty() { return Err(NetError::new(BAD_REQUEST, None)) }
+        if (&req_lines).is_empty() { return Err(NetError::new(BadRequest, None)) }
         let head_line = (&req_lines)[0].clone();
         let head_line_v = head_line.split(" ").collect::<Vec<_>>();
-        if head_line_v.clone().len() != 3 {return Err(NetError::new(BAD_REQUEST, None))}
+        if head_line_v.clone().len() != 3 {return Err(NetError::new(BadRequest, None))}
         
         let method_r = Methods::from_str(head_line_v[0].to_uppercase().as_str());
-        if method_r.is_err() {return Err(NetError::new(BAD_REQUEST, None))}
+        if method_r.is_err() {return Err(NetError::new(BadRequest, None))}
         let method = method_r.unwrap();
 
         let path = head_line_v[1].to_string();

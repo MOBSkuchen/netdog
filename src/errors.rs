@@ -7,12 +7,12 @@ use crate::logger::{LogLevel, Logger};
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum HttpCode {
     OK = 200,
-    BAD_REQUEST = 400,
-    UNAUTHORIZED = 401,
-    FORBIDDEN = 403,
-    NOT_FOUND = 404,
-    METHOD_NOT_ALLOWD = 405,
-    INTERNAL_ERROR = 500,
+    BadRequest = 400,
+    Unauthorized = 401,
+    Forbidden = 403,
+    NotFound = 404,
+    MethodNotAllowed = 405,
+    InternalError = 500,
 }
 
 impl HttpCode {
@@ -23,12 +23,12 @@ impl HttpCode {
     pub fn from_num(num: u16) -> Option<Self> {
         match num {
             200 => Some(HttpCode::OK),
-            400 => Some(HttpCode::BAD_REQUEST),
-            401 => Some(HttpCode::UNAUTHORIZED),
-            403 => Some(HttpCode::FORBIDDEN),
-            404 => Some(HttpCode::NOT_FOUND),
-            405 => Some(HttpCode::METHOD_NOT_ALLOWD),
-            500 => Some(HttpCode::INTERNAL_ERROR),
+            400 => Some(HttpCode::BadRequest),
+            401 => Some(HttpCode::Unauthorized),
+            403 => Some(HttpCode::Forbidden),
+            404 => Some(HttpCode::NotFound),
+            405 => Some(HttpCode::MethodNotAllowed),
+            500 => Some(HttpCode::InternalError),
             _ => None
         }
     }

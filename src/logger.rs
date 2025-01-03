@@ -4,7 +4,7 @@ use std::io::Write;
 use crate::errors::{DogError, DogResult};
 extern crate chrono;
 use chrono::Local;
-use mlua::{FromLua, UserData};
+use mlua::{UserData};
 use serde::{Deserialize, Serialize};
 
 const DATE_FORMAT_STR: &'static str = "%Y-%m-%d %H:%M:%S";

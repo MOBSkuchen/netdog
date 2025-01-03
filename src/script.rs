@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::sync::{Arc, Mutex};
 use mlua;
-use mlua::{Function, Lua, ObjectLike, StdLib, Table, UserData};
+use mlua::{Function, Lua, StdLib, Table, UserData};
 use mlua::prelude::LuaError;
 use crate::errors::{DogError, DogResult, HttpCode};
 use crate::logger::Logger;
@@ -52,13 +52,13 @@ fn _lua_read(lua: &Lua, path: String) -> Result<mlua::String, LuaError> {
     fs::read_to_string(path).map(|t| {lua.convert(t).unwrap()}).or(Err(LuaError::runtime("Unable to read file")))
 }
 
-fn _lua_write(lua: &Lua, (path, content): (String, String)) -> Result<(), LuaError> {
+fn _lua_write(_lua: &Lua, (path, content): (String, String)) -> Result<(), LuaError> {
     fs::write(path, content).or(Err(LuaError::runtime("Unable to read file")))
 }
 
 fn _mk_logger(lua: &Lua) -> Result<Logger, LuaError> {
     let globals = lua.globals();
-    let logger_file: Result<Option<String>, ()> = globals.get("__logger_file").and_then(|t| {Ok(Some(t))}).or_else(|e| {Ok(None)});
+    let logger_file: Result<Option<String>, ()> = globals.get("__logger_file").and_then(|t| {Ok(Some(t))}).or_else(|_e| {Ok(None)});
     let logger = Logger::new(globals.get("__logger_print")?, logger_file.unwrap()).unwrap();
     Ok(logger)
 }

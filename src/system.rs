@@ -5,7 +5,7 @@ use std::str::FromStr;
 use serde::Deserialize;
 use toml::{Table};
 use crate::errors::{DogError, DogResult, HttpCode, NetError, NetResult};
-use crate::errors::HttpCode::{INTERNAL_ERROR, NOT_FOUND};
+use crate::errors::HttpCode::{InternalError, NotFound};
 use crate::logger::Logger;
 use crate::request::{Headers, HttpRequest, Methods};
 use crate::response::{ContentType, HttpResponse};
@@ -53,11 +53,11 @@ fn url_resolve_mult(routes: &[Route], url: &str, method: Methods) -> NetResult<R
         let x = url_resolve(route, url, &method);
         if x.is_ok() {return Ok(x.unwrap());}
     }
-    Err(NetError::new(NOT_FOUND, Some("No matching route found".to_string())))
+    Err(NetError::new(NotFound, Some("No matching route found".to_string())))
 }
 
 #[derive(Deserialize)]
-struct Config_toml {
+struct ConfigToml {
     pub ip: String,
     pub cwd: Option<String>,
     pub port: Option<u16>,
@@ -169,9 +169,9 @@ pub struct System {
 }
 
 impl System {
-    pub fn new(cfg_t: Config_toml) -> DogResult<Self> {
+    pub fn new(cfg_t: ConfigToml) -> DogResult<Self> {
         if cfg_t.cwd.is_some() {
-            std::env::set_current_dir(cfg_t.cwd.unwrap().as_str()).or_else(|e| {
+            std::env::set_current_dir(cfg_t.cwd.unwrap().as_str()).or_else(|_e| {
                 Err(DogError::new(Logger::default(), "usr-cfgensure-setcwd".to_string(), "Failed to set CWD".to_string()))
             })?
         }
@@ -207,7 +207,7 @@ impl System {
 
     pub fn netdog_error(&mut self, error: DogError) -> HttpResponse {
         self.logger.error(format!("Serving client with NetDog error [{}]", error.__fmtx()).as_str());
-        HttpResponse::new((INTERNAL_ERROR, error.name), Headers::new(), (vec![], ContentType::NONE))
+        HttpResponse::new((InternalError, error.name), Headers::new(), (vec![], ContentType::NONE))
     }
 
     pub fn load_content_path(&self, path: String) -> DogResult<Vec<u8>> {
