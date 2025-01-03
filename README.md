@@ -15,6 +15,7 @@ After installing, create your config toml file:
 ```toml
 ip = "127.0.0.1"                            # REQUIRED | IP.
 port = 5000                                 # OPTIONAL | Port. Defaults to 8080.
+cwd = "/path/to/my/stuff"                   # OPTIONAL | Set current working directory.
 
 [logger]                                    # OPTIONAL | Logger configuration.
 print = true                                # OPTIONAL | Whether to print or not. Defaults to true.
