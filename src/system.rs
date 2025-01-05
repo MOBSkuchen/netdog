@@ -65,7 +65,6 @@ struct ConfigToml {
     pub logger: Option<LoggerCfg>,
     pub routes: Table,
     pub errors: Option<Table>,
-    pub scripts: Option<Table>
 }
 
 #[derive(Deserialize)]
@@ -136,7 +135,7 @@ impl Route {
 
 #[derive(Clone, Debug)]
 pub struct ErrorRoute {
-    erc: u16,
+    _erc: u16,
     path: String
 }
 
@@ -144,7 +143,7 @@ impl ErrorRoute {
     pub fn new(logger: Logger, erc: u16, t: Table) -> DogResult<Self> {
         if !t.contains_key("path") {return Err(DogError::new(logger, "usr-cfgensure-cfgld".to_string(), "Missing key 'path'".to_string()))}
 
-        Ok(Self {erc, path: t.get("path").unwrap().to_string()})
+        Ok(Self { _erc: erc, path: t.get("path").unwrap().to_string()})
     }
 
     pub fn tbljob(logger: Logger, t: Table) -> DogResult<HashMap<u16, ErrorRoute>> {

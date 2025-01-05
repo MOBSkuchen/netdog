@@ -49,11 +49,13 @@ pub struct HttpRequest {
 }
 
 impl HttpRequest {
+    /*
     pub fn new(method: Methods,
                protocol_v: String,
                path: String) -> Self {
         Self {method, protocol_v, path, headers: Default::default(), body: vec![], host: None}
     }
+    */
     
     pub fn format(&self) -> String {
         format!("{:?} {} ({})", self.method, self.path, self.host.clone().or_else(|| {Some("None".to_string())}).unwrap())

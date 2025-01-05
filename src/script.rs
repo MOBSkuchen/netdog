@@ -125,9 +125,10 @@ impl ScriptLoader {
     }
     
     pub fn run_script(&self, script: &str, request: HttpRequest) -> DogResult<HttpResponse> {
-        let result = self.scripts.get(script).unwrap().run(request);
+        let script = self.scripts.get(script).unwrap();
+        let result = script.run(request);
         if result.is_err() {
-            return Err(DogError::new(self.logger.clone(), "usr-script-run".to_string(), format!("Running script failed => {}", result.unwrap_err())))
+            return Err(DogError::new(self.logger.clone(), "usr-script-run".to_string(), format!("Running script ({}) failed => {}", script.path, result.unwrap_err())))
         }
         Ok(self.table_to_response(result.unwrap())?)
     }

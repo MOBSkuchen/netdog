@@ -5,7 +5,7 @@ use std::{
 use crate::logger::Logger;
 
 pub struct ThreadPool {
-    workers: Vec<Worker>,
+    _workers: Vec<Worker>,
     sender: mpsc::Sender<Job>,
 }
 
@@ -25,7 +25,7 @@ impl ThreadPool {
             workers.push(Worker::new(logger.clone(), id, Arc::clone(&receiver)));
         }
 
-        ThreadPool { workers, sender }
+        ThreadPool { _workers: workers, sender }
     }
 
     pub fn execute<F>(&self, f: F)
