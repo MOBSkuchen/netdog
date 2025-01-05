@@ -26,27 +26,19 @@ impl Script {
         Ok(Self {path, function})
     }
     
-    pub fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(self.function.call::<()>(())?)
+    pub fn run(&self, request: HttpRequest) -> Result<Table, Box<dyn std::error::Error>> {
+        Ok(self.function.call::<Table>(request)?)
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct ScriptLoader {
-    lua: Arc<Mutex<Lua>>,
+    _lua: Arc<Mutex<Lua>>,
     scripts: HashMap<String, Script>,
     logger: Logger
 }
 
 unsafe impl Send for ScriptLoader {}
-
-fn every<T, I>(v: I) -> bool
-where
-    I: IntoIterator<Item = T>,
-    T: std::ops::Not<Output = bool>,
-{
-    v.into_iter().all(|x| !!x)
-}
 
 fn _lua_read(lua: &Lua, path: String) -> Result<mlua::String, LuaError> {
     fs::read_to_string(path).map(|t| {lua.convert(t).unwrap()}).or(Err(LuaError::runtime("Unable to read file")))
@@ -105,7 +97,7 @@ impl ScriptLoader {
             scripts.insert(script_loc.0, script.unwrap());
         }
         
-        Ok(Self {lua: Arc::new(Mutex::new(lua)), logger, scripts})
+        Ok(Self { _lua: Arc::new(Mutex::new(lua)), logger, scripts})
     }
     
     pub fn table_to_response(&self, table: Table) -> DogResult<HttpResponse> {
@@ -133,7 +125,7 @@ impl ScriptLoader {
     }
     
     pub fn run_script(&self, script: &str, request: HttpRequest) -> DogResult<HttpResponse> {
-        let result = self.scripts.get(script).unwrap().function.call::<Table>(request);
+        let result = self.scripts.get(script).unwrap().run(request);
         if result.is_err() {
             return Err(DogError::new(self.logger.clone(), "usr-script-run".to_string(), format!("Running script failed => {}", result.unwrap_err())))
         }
