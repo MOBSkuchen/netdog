@@ -114,6 +114,7 @@ impl ScriptLoader {
             return Err(DogError::new(self.logger.clone(), "usr-scripts-evres".to_string(), "Missing 'content' in response table".to_string()))
         }
         
+        let reroute = table.contains_key("reroute").unwrap() && (table.get::<bool>("reroute").unwrap() == true);
         let code = HttpCode::from_num(table.get("code").unwrap());
         if code.is_none() { return Err(DogError::new(self.logger.clone(), "usr-scripts-evres".to_string(), "Malformed entry 'code' in response table".to_string())) }
         let content: String = table.get("content").unwrap();
@@ -121,7 +122,7 @@ impl ScriptLoader {
         
         Ok(HttpResponse::new((code.unwrap(), table.get("resp").unwrap()),
                              table.get("headers").unwrap(), 
-                             (content.into_bytes(), ContentType::from_ext(ct.as_str()))))
+                             (content.into_bytes(), ContentType::from_ext(ct.as_str())), reroute))
     }
     
     pub fn run_script(&self, script: &str, request: HttpRequest) -> DogResult<HttpResponse> {

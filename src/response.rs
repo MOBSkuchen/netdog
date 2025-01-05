@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::net::TcpStream;
 use serde::{Deserialize, Serialize};
-use crate::errors::{DogError, HttpCode};
+use crate::errors::{DogError, HttpCode, NetError};
 use crate::logger::Logger;
 use crate::request::Headers;
 
@@ -113,19 +113,25 @@ pub struct HttpResponse {
     response: (HttpCode, String),
     headers: Headers,
     content: (Vec<u8>, ContentType),
-    has_content: bool
+    has_content: bool,
+    pub reroute: bool
 }
 
 impl HttpResponse {
     pub fn new(response: (HttpCode, String),
                headers: Headers,
-               content: (Vec<u8>, ContentType)) -> Self {
+               content: (Vec<u8>, ContentType),
+               reroute: bool) -> Self {
         let mut header_c = headers.clone();
         if content.1 != ContentType::NONE {
             header_c.insert("Content-Length".to_string(), content.0.len().to_string());
             header_c.insert("Content-Type".to_string(), content.1.clone().to_string());
         }
-        Self {protocol_v: "HTTP/1.1".to_string(), response, headers: header_c, content: (&content).to_owned(), has_content: content.1 != ContentType::NONE}
+        Self {protocol_v: "HTTP/1.1".to_string(), response, headers: header_c, content: (&content).to_owned(), has_content: content.1 != ContentType::NONE, reroute}
+    }
+    
+    pub fn to_net_error(&self) -> NetError {
+        NetError::new(self.response.0.clone(), Some(self.response.1.clone()))
     }
 
     pub fn make(&self) -> Vec<u8> {

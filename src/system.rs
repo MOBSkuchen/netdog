@@ -206,7 +206,7 @@ impl System {
 
     pub fn netdog_error(&mut self, error: DogError) -> HttpResponse {
         self.logger.error(format!("Serving client with NetDog error [{}]", error.__fmtx()).as_str());
-        HttpResponse::new((InternalError, error.name), Headers::new(), (vec![], ContentType::NONE))
+        HttpResponse::new((InternalError, error.name), Headers::new(), (vec![], ContentType::NONE), false)
     }
 
     pub fn load_content_path(&self, path: String) -> DogResult<Vec<u8>> {
@@ -224,16 +224,16 @@ impl System {
             let r_fn = self.errors.get(erc).unwrap().path.clone();
             let content = self.load_content_path(r_fn.clone().into());
             if content.is_err() {return self.netdog_error(content.unwrap_err())}
-            HttpResponse::new((error.erc, error.details), Headers::new(), (content.unwrap(), ContentType::from_file_name(&*r_fn)))
+            HttpResponse::new((error.erc, error.details), Headers::new(), (content.unwrap(), ContentType::from_file_name(&*r_fn)), false)
         } else {
-            HttpResponse::new((error.erc, error.details), Headers::new(), (format!("Error {}", erc).into_bytes(), HTML))
+            HttpResponse::new((error.erc, error.details), Headers::new(), (format!("Error {}", erc).into_bytes(), HTML), false)
         }
     }
 
     pub fn route_to_response(&mut self, route: Route) -> HttpResponse {
         let content = self.load_content_path(route.path.clone().into());
         if content.is_err() {return self.netdog_error(content.unwrap_err())}
-        HttpResponse::new((HttpCode::OK, "OK".to_string()), Headers::new(), (content.unwrap(), ContentType::from_file_name(&*route.path)))
+        HttpResponse::new((HttpCode::OK, "OK".to_string()), Headers::new(), (content.unwrap(), ContentType::from_file_name(&*route.path)), false)
     }
 
     pub fn route(&mut self, req: HttpRequest) -> HttpResponse {
@@ -250,7 +250,12 @@ impl System {
                     self.logger.error(format!("Got an error from script {}", route.name).as_str());
                     self.netdog_error(ret.unwrap_err())
                 } else {
-                    ret.unwrap()
+                    let response = ret.unwrap();
+                    if response.reroute {
+                        self.route_error(response.to_net_error())
+                    } else {
+                        response
+                    }
                 }
             }
             self.logger.info(format!("Routing < {} > -> {}", req.format(), route.path).as_str());
