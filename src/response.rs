@@ -1,9 +1,9 @@
-use std::io::Write;
-use std::net::TcpStream;
-use serde::{Deserialize, Serialize};
 use crate::errors::{DogError, HttpCode, NetError};
 use crate::logger::Logger;
 use crate::request::Headers;
+use serde::{Deserialize, Serialize};
+use std::io::Write;
+use std::net::TcpStream;
 
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum ContentType {
@@ -32,7 +32,7 @@ pub enum ContentType {
     WEBM,
     ICO,
     NONE,
-    UNKNOWN
+    UNKNOWN,
 }
 
 impl ContentType {
@@ -64,9 +64,10 @@ impl ContentType {
             ContentType::ICO => "image/x-icon",
             ContentType::NONE => "",
             ContentType::UNKNOWN => "application/octet-stream",
-        }.to_string()
+        }
+        .to_string()
     }
-    
+
     pub fn from_ext(ext: &str) -> ContentType {
         match ext.to_lowercase().as_str() {
             "html" | "htm" => ContentType::HTML,
@@ -99,44 +100,59 @@ impl ContentType {
     }
 
     pub fn from_file_name(file_name: &str) -> ContentType {
-        if !file_name.contains(".") { return ContentType::UNKNOWN }
+        if !file_name.contains(".") {
+            return ContentType::UNKNOWN;
+        }
         let mut splitter = file_name.splitn(2, ".");
         splitter.next().unwrap();
         Self::from_ext(splitter.next().unwrap())
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct HttpResponse {
     protocol_v: String,
     response: (HttpCode, String),
     headers: Headers,
     content: (Vec<u8>, ContentType),
     has_content: bool,
-    pub reroute: bool
+    pub reroute: bool,
 }
 
 impl HttpResponse {
-    pub fn new(response: (HttpCode, String),
-               headers: Headers,
-               content: (Vec<u8>, ContentType),
-               reroute: bool) -> Self {
+    pub fn new(
+        response: (HttpCode, String),
+        headers: Headers,
+        content: (Vec<u8>, ContentType),
+        reroute: bool,
+    ) -> Self {
         let mut header_c = headers.clone();
         if content.1 != ContentType::NONE {
             header_c.insert("Content-Length".to_string(), content.0.len().to_string());
             header_c.insert("Content-Type".to_string(), content.1.clone().to_string());
         }
-        Self {protocol_v: "HTTP/1.1".to_string(), response, headers: header_c, content: (&content).to_owned(), has_content: content.1 != ContentType::NONE, reroute}
+        Self {
+            protocol_v: "HTTP/1.1".to_string(),
+            response,
+            headers: header_c,
+            content: (&content).to_owned(),
+            has_content: content.1 != ContentType::NONE,
+            reroute,
+        }
     }
-    
+
     pub fn to_net_error(&self) -> NetError {
         NetError::new(self.response.0.clone(), Some(self.response.1.clone()))
     }
 
     pub fn make(&self) -> Vec<u8> {
         let content_vecu8 = &self.content;
-        let mut r = format!("{} {:?} {}", self.protocol_v, self.response.0.to_num(), self.response.1);
+        let mut r = format!(
+            "{} {:?} {}",
+            self.protocol_v,
+            self.response.0.to_num(),
+            self.response.1
+        );
         for header in &self.headers {
             r += format!("\n{}: {}", header.0, header.1).as_str()
         }
@@ -145,16 +161,25 @@ impl HttpResponse {
         }
         [r.into_bytes(), content_vecu8.0.clone()].concat()
     }
-    
+
     fn __send(&self, mut stream: &TcpStream) -> Result<(), ()> {
-        if stream.write(self.make().as_ref()).is_err() {return Err(())}
-        if stream.flush().is_err() {return Err(())}
+        if stream.write(self.make().as_ref()).is_err() {
+            return Err(());
+        }
+        if stream.flush().is_err() {
+            return Err(());
+        }
         Ok(())
     }
-    
+
     pub fn send(&self, logger: Logger, stream: &TcpStream) {
         if self.__send(&stream).is_err() {
-            DogError::new(logger, "con-sendfail-sr".to_string(), "Error while sending response to client".to_string()).print();
+            DogError::new(
+                logger,
+                "con-sendfail-sr".to_string(),
+                "Error while sending response to client".to_string(),
+            )
+            .print();
         }
     }
 }

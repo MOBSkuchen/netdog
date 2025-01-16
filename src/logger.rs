@@ -1,10 +1,10 @@
-use std::fs;
-use std::fs::{OpenOptions};
-use std::io::Write;
 use crate::errors::{DogError, DogResult};
+use std::fs;
+use std::fs::OpenOptions;
+use std::io::Write;
 extern crate chrono;
 use chrono::Local;
-use mlua::{UserData};
+use mlua::UserData;
 use serde::{Deserialize, Serialize};
 
 const DATE_FORMAT_STR: &'static str = "%Y-%m-%d %H:%M:%S";
@@ -13,7 +13,7 @@ const DATE_FORMAT_STR: &'static str = "%Y-%m-%d %H:%M:%S";
 pub enum LogLevel {
     INFO,
     ERROR,
-    FATAL
+    FATAL,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,19 +27,37 @@ impl UserData for Logger {}
 
 impl Logger {
     pub fn default() -> Self {
-        Self {write_file: None, do_print: true, deactivated: false}
+        Self {
+            write_file: None,
+            do_print: true,
+            deactivated: false,
+        }
     }
-    
+
     pub fn new(do_print: bool, out_file: Option<String>) -> DogResult<Self> {
         let file = if out_file.is_some() {
-            if fs::exists(out_file.clone().unwrap()).unwrap() {Some(out_file.unwrap())}
-            else {
+            if fs::exists(out_file.clone().unwrap()).unwrap() {
+                Some(out_file.unwrap())
+            } else {
                 let x = fs::write(out_file.clone().unwrap(), &*vec![]);
-                if x.is_ok() {Some(out_file.unwrap())}
-                else {return Err(DogError::fatal(Self::default(), "usr-fileopen-log".into(), "Could not open log file".to_string()))}
+                if x.is_ok() {
+                    Some(out_file.unwrap())
+                } else {
+                    return Err(DogError::fatal(
+                        Self::default(),
+                        "usr-fileopen-log".into(),
+                        "Could not open log file".to_string(),
+                    ));
+                }
             }
-        } else { None };
-        Ok(Self { write_file: file, do_print, deactivated: false})
+        } else {
+            None
+        };
+        Ok(Self {
+            write_file: file,
+            do_print,
+            deactivated: false,
+        })
     }
 
     fn __write_out(&mut self, s: &str) {
@@ -53,7 +71,11 @@ impl Logger {
             let res = writeln!(file, "{}", s);
             if res.is_err() {
                 self.deactivated = true;
-                DogError::fatal(self.clone(), "fsw-writelg-log1".to_string(), "Can not write log".to_string());
+                DogError::fatal(
+                    self.clone(),
+                    "fsw-writelg-log1".to_string(),
+                    "Can not write log".to_string(),
+                );
             }
         }
     }
@@ -65,17 +87,19 @@ impl Logger {
     }
 
     pub fn log(&mut self, level: LogLevel, message: &str) {
-        if self.deactivated {return}
+        if self.deactivated {
+            return;
+        }
         let tm = Local::now();
         let fmt_log = format!("{} | {:?} : {}", tm.format(DATE_FORMAT_STR), level, message);
         self.__print_out(&fmt_log);
         self.__write_out(&fmt_log);
     }
-    
+
     pub fn error(&mut self, message: &str) {
         self.log(LogLevel::ERROR, message);
     }
-    
+
     pub fn info(&mut self, message: &str) {
         self.log(LogLevel::INFO, message);
     }

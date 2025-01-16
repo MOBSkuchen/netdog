@@ -1,23 +1,29 @@
 mod errors;
-mod threading;
+mod logger;
 mod request;
 mod response;
-mod system;
-mod logger;
 mod script;
+mod system;
+mod threading;
 
-use std::{fs, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}};
 use crate::errors::DogError;
 use crate::logger::Logger;
+use crate::request::HttpRequest;
 use crate::system::System;
-use crate::request::{HttpRequest};
 use crate::threading::ThreadPool;
+use std::{
+    fs,
+    io::{prelude::*, BufReader},
+    net::{TcpListener, TcpStream},
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-
 pub fn make_link(prefix: &str, addr: &str) -> String {
-    format!("{}://\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", prefix, addr, addr)
+    format!(
+        "{}://\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
+        prefix, addr, addr
+    )
 }
 
 struct NetDog {
@@ -29,7 +35,9 @@ struct NetDog {
 impl NetDog {
     pub fn new(cfg_file_path: String) -> Self {
         let system_r = System::from_file(cfg_file_path);
-        if system_r.is_err() { DogError::__terminate(); }
+        if system_r.is_err() {
+            DogError::__terminate();
+        }
         let system = system_r.unwrap();
 
         let addr = format!("{}:{:?}", system.ip, system.port);
@@ -38,7 +46,11 @@ impl NetDog {
         let listener = TcpListener::bind(addr).unwrap();
         let pool = ThreadPool::new(&system.logger, system.max_cons as usize);
 
-        Self { system, listener, pool}
+        Self {
+            system,
+            listener,
+            pool,
+        }
     }
 
     fn start(&self) {
@@ -62,7 +74,9 @@ impl NetDog {
 
         let request_r = HttpRequest::from_raw(http_request);
         if request_r.is_err() {
-            system.route_error(request_r.unwrap_err()).send(logger, &stream);
+            system
+                .route_error(request_r.unwrap_err())
+                .send(logger, &stream);
         } else {
             system.route(request_r.unwrap()).send(logger, &stream);
         }
@@ -77,7 +91,10 @@ fn main() {
     if args.len() > 1 && fs::exists(args[1].clone()).unwrap() {
         config_path = args[1].clone();
     } else if args.len() > 1 && args[1].clone().to_lowercase() == "help" {
-        println!("Not enough help? More at {}", make_link("https", "github.com/MOBSkuchen/netdog"));
+        println!(
+            "Not enough help? More at {}",
+            make_link("https", "github.com/MOBSkuchen/netdog")
+        );
         println!("Usage | ´netdog´ or ´netdog <my-config.toml>´");
         println!("  OR  | ´netdog help´ or ´netdog version´");
         println!("If you don't specify your config file path, it will default to 'config.toml'");

@@ -1,8 +1,8 @@
+use crate::logger::Logger;
 use std::{
     sync::{mpsc, Arc, Mutex},
     thread,
 };
-use crate::logger::Logger;
 
 pub struct ThreadPool {
     _workers: Vec<Worker>,
@@ -25,7 +25,10 @@ impl ThreadPool {
             workers.push(Worker::new(logger.clone(), id, Arc::clone(&receiver)));
         }
 
-        ThreadPool { _workers: workers, sender }
+        ThreadPool {
+            _workers: workers,
+            sender,
+        }
     }
 
     pub fn execute<F>(&self, f: F)
@@ -51,6 +54,9 @@ impl Worker {
             }
         });
 
-        Worker { _id: id, _thread: thread }
+        Worker {
+            _id: id,
+            _thread: thread,
+        }
     }
 }

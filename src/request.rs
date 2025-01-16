@@ -1,12 +1,12 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use crate::errors::HttpCode::BadRequest;
 use crate::errors::{NetError, NetResult};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Methods {
     GET,
-    POST
+    POST,
 }
 
 impl Methods {
@@ -14,10 +14,10 @@ impl Methods {
         match s.to_uppercase().as_str() {
             "GET" => Ok(Methods::GET),
             "POST" => Ok(Methods::POST),
-            _ => {Err(())}
+            _ => Err(()),
         }
     }
-    
+
     pub fn from_str_mult(sv: Vec<&str>) -> Result<Vec<Methods>, ()> {
         let mut ret: Vec<Methods> = vec![];
         for s in sv {
@@ -32,7 +32,9 @@ pub type Headers = HashMap<String, String>;
 
 fn split_once(in_string: &str) -> Result<(&str, &str), NetError> {
     let mut splitter = in_string.splitn(2, ": ");
-    if splitter.clone().count() < 2 {return Err(NetError::new(BadRequest, None))}
+    if splitter.clone().count() < 2 {
+        return Err(NetError::new(BadRequest, None));
+    }
     let first = splitter.next().unwrap();
     let second = splitter.next().unwrap();
     Ok((first, second))
@@ -45,7 +47,7 @@ pub struct HttpRequest {
     pub path: String,
     pub headers: Headers,
     pub body: Vec<u8>,
-    pub host: Option<String>
+    pub host: Option<String>,
 }
 
 impl HttpRequest {
@@ -56,9 +58,17 @@ impl HttpRequest {
         Self {method, protocol_v, path, headers: Default::default(), body: vec![], host: None}
     }
     */
-    
+
     pub fn format(&self) -> String {
-        format!("{:?} {} ({})", self.method, self.path, self.host.clone().or_else(|| {Some("None".to_string())}).unwrap())
+        format!(
+            "{:?} {} ({})",
+            self.method,
+            self.path,
+            self.host
+                .clone()
+                .or_else(|| { Some("None".to_string()) })
+                .unwrap()
+        )
     }
 
     pub fn mk_headers(lns: Vec<String>) -> NetResult<Headers> {
@@ -73,13 +83,19 @@ impl HttpRequest {
     }
 
     pub fn from_raw(mut req_lines: Vec<String>) -> NetResult<Self> {
-        if (&req_lines).is_empty() { return Err(NetError::new(BadRequest, None)) }
+        if (&req_lines).is_empty() {
+            return Err(NetError::new(BadRequest, None));
+        }
         let head_line = (&req_lines)[0].clone();
         let head_line_v = head_line.split(" ").collect::<Vec<_>>();
-        if head_line_v.clone().len() != 3 {return Err(NetError::new(BadRequest, None))}
-        
+        if head_line_v.clone().len() != 3 {
+            return Err(NetError::new(BadRequest, None));
+        }
+
         let method_r = Methods::from_str(head_line_v[0].to_uppercase().as_str());
-        if method_r.is_err() {return Err(NetError::new(BadRequest, None))}
+        if method_r.is_err() {
+            return Err(NetError::new(BadRequest, None));
+        }
         let method = method_r.unwrap();
 
         let path = head_line_v[1].to_string();
@@ -90,6 +106,13 @@ impl HttpRequest {
 
         let headers = Self::mk_headers(req_lines)?;
 
-        Ok(Self {method, protocol_v, path, headers: headers.clone(), body: vec![], host: headers.get("Host").cloned()})
+        Ok(Self {
+            method,
+            protocol_v,
+            path,
+            headers: headers.clone(),
+            body: vec![],
+            host: headers.get("Host").cloned(),
+        })
     }
 }
