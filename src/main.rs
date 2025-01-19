@@ -16,16 +16,18 @@ use std::{
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
 };
-use std::fmt::{Debug, Display};
 
 fn set_thread_panic_hook() {
-    use std::{
-        panic::{set_hook, take_hook},
-    };
+    use std::panic::{set_hook, take_hook};
     let orig_hook = take_hook();
     set_hook(Box::new(move |panic_info| {
         orig_hook(panic_info);
-        DogError::new(Logger::default(), "netdog-panic".to_string(), panic_info.to_string()).print();
+        DogError::new(
+            Logger::default(),
+            "netdog-panic".to_string(),
+            panic_info.to_string(),
+        )
+        .print();
     }));
 }
 
@@ -67,7 +69,9 @@ impl NetDog {
 
     fn start(&self) {
         for stream in self.listener.incoming() {
-            if stream.is_err() { continue }
+            if stream.is_err() {
+                continue;
+            }
             let sys = self.system.clone();
             let log = self.system.logger.clone();
             self.pool.execute(|| {
