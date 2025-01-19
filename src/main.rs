@@ -107,11 +107,11 @@ fn main() {
     set_thread_panic_hook();
     println!("Netdog v{VERSION} - by MOBSkuchen");
     let args = std::env::args().collect::<Vec<String>>();
-    let mut config_path = "config.toml".to_string();
+    let mut config_path = "config.toml";
     // I know that this is suboptimal, but I hope that LLVM will optimize it for me
-    if args.len() > 1 && fs::exists(args[1].clone()).unwrap() {
-        config_path = args[1].clone();
-    } else if args.len() > 1 && args[1].clone().to_lowercase() == "help" {
+    if args.len() > 1 && fs::exists(&args[1]).unwrap() {
+        config_path = &args[1];
+    } else if args.len() > 1 && args[1].to_lowercase() == "help" {
         println!(
             "Not enough help? More at {}",
             make_link("https", "github.com/MOBSkuchen/netdog")
@@ -120,11 +120,11 @@ fn main() {
         println!("  OR  | ´netdog help´ or ´netdog version´");
         println!("If you don't specify your config file path, it will default to 'config.toml'");
         return;
-    } else if args.len() > 1 && args[1].clone().to_lowercase() == "version" {
+    } else if args.len() > 1 && args[1].to_lowercase() == "version" {
         return;
-    } else if args.len() > 1 && !fs::exists(args[1].clone()).unwrap() {
+    } else if args.len() > 1 && !fs::exists(&args[1]).unwrap() {
         println!("Tip: The default config file is config.toml\nUse ´netdog <my-config.toml>´ to specify your own");
     }
-    let mut netdog = NetDog::new(config_path);
+    let mut netdog = NetDog::new(config_path.to_string());
     netdog.start();
 }
