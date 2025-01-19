@@ -32,7 +32,7 @@ pub type Headers = HashMap<String, String>;
 
 fn split_once(in_string: &str) -> Result<(&str, &str), NetError> {
     let mut splitter = in_string.splitn(2, ": ");
-    if splitter.clone().count() < 2 {
+    if (&mut splitter).count() < 2 {
         return Err(NetError::new(BadRequest, None));
     }
     let first = splitter.next().unwrap();
@@ -86,9 +86,9 @@ impl HttpRequest {
         if (&req_lines).is_empty() {
             return Err(NetError::new(BadRequest, None));
         }
-        let head_line = (&req_lines)[0].clone();
+        let head_line = &(&req_lines)[0];
         let head_line_v = head_line.split(" ").collect::<Vec<_>>();
-        if head_line_v.clone().len() != 3 {
+        if head_line_v.len() != 3 {
             return Err(NetError::new(BadRequest, None));
         }
 
@@ -104,14 +104,15 @@ impl HttpRequest {
         req_lines.remove(0);
 
         let headers = Self::mk_headers(req_lines)?;
+        let host = headers.get("Host").cloned();
 
         Ok(Self {
             method,
             protocol_v,
             path,
-            headers: headers.clone(),
+            headers,
             body: vec![],
-            host: headers.get("Host").cloned(),
+            host,
         })
     }
 }
