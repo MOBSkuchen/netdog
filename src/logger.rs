@@ -36,12 +36,13 @@ impl Logger {
 
     pub fn new(do_print: bool, out_file: Option<String>) -> DogResult<Self> {
         let file = if out_file.is_some() {
-            if fs::exists(out_file.clone().unwrap()).unwrap() {
-                Some(out_file.unwrap())
+            let out_file = out_file.unwrap();
+            if fs::exists(&out_file).unwrap() {
+                Some(out_file)
             } else {
-                let x = fs::write(out_file.clone().unwrap(), &*vec![]);
+                let x = fs::write(&out_file, &*vec![]);
                 if x.is_ok() {
-                    Some(out_file.unwrap())
+                    Some(out_file)
                 } else {
                     return Err(DogError::fatal(
                         Self::default(),
@@ -61,7 +62,7 @@ impl Logger {
     }
 
     fn __write_out(&mut self, s: &str) {
-        if self.write_file.clone().is_some() {
+        if self.write_file.is_some() {
             let mut file = OpenOptions::new()
                 .write(true)
                 .append(true)
@@ -72,7 +73,7 @@ impl Logger {
             if res.is_err() {
                 self.deactivated = true;
                 DogError::fatal(
-                    self.clone(),
+                    self.to_owned(),
                     "fsw-writelg-log1".to_string(),
                     "Can not write log".to_string(),
                 );

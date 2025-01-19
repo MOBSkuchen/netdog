@@ -23,7 +23,7 @@ fn set_thread_panic_hook() {
     set_hook(Box::new(move |panic_info| {
         orig_hook(panic_info);
         DogError::new(
-            Logger::default(),
+            &Logger::default(),
             "netdog-panic".to_string(),
             panic_info.to_string(),
         )
@@ -77,7 +77,7 @@ impl NetDog {
                         NetDog::handle_connection(stream, sys, log);
                     });
                 }
-                Err(e) => { 
+                Err(_e) => { 
                     self.system.logger.info("Connection failed");
                 }
             }
@@ -96,9 +96,9 @@ impl NetDog {
         if request_r.is_err() {
             system
                 .route_error(request_r.unwrap_err())
-                .send(logger, &stream);
+                .send(&logger, &stream);
         } else {
-            system.route(request_r.unwrap()).send(logger, &stream);
+            system.route(request_r.unwrap()).send(&logger, &stream);
         }
     }
 }

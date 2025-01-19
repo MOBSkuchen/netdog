@@ -103,21 +103,21 @@ pub struct Route {
 }
 
 impl Route {
-    pub fn new(logger: Logger, name: String, t: Table) -> DogResult<Self> {
+    pub fn new(logger: &Logger, name: String, t: Table) -> DogResult<Self> {
         let (path, path_is_script) = if t.contains_key("path") {
             (t.get("path").unwrap().as_str().unwrap().to_string(), false)
         } else if t.contains_key("script") {
             (t.get("script").unwrap().as_str().unwrap().to_string(), true)
         } else {
             return Err(DogError::new(
-                logger,
+                &logger,
                 "usr-cfgensure-cfgld".to_string(),
                 "Missing key 'path' or 'script'".to_string(),
             ));
         };
         if !t.contains_key("url") {
             return Err(DogError::new(
-                logger,
+                &logger,
                 "usr-cfgensure-cfgld".to_string(),
                 "Missing key 'url'".to_string(),
             ));
@@ -127,7 +127,7 @@ impl Route {
                 .map(|t1| vec![t1])
                 .or_else(|_e| {
                     return Err(DogError::new(
-                        logger,
+                        &logger,
                         "usr-cfgensure-cfgld".to_string(),
                         "Ill formatted key 'method'".to_string(),
                     ));
@@ -144,21 +144,21 @@ impl Route {
             );
             if v.is_none() {
                 return Err(DogError::new(
-                    logger,
+                    &logger,
                     "usr-cfgensure-cfgld".to_string(),
                     "Ill formatted key 'methods'".to_string(),
                 ));
             }
             Methods::from_str_mult(v.unwrap()).or_else(|_e1| {
                 Err(DogError::new(
-                    logger,
+                    &logger,
                     "usr-cfgensure-cfgld".to_string(),
                     "Ill formatted key 'methods'".to_string(),
                 ))
             })
         } else {
             return Err(DogError::new(
-                logger,
+                &logger,
                 "usr-cfgensure-cfgld".to_string(),
                 "Missing key 'method' or 'methods'".to_string(),
             ));
@@ -181,11 +181,11 @@ impl Route {
         let mut hm_s = HashMap::new();
         for x in t.keys() {
             let rt = Route::new(
-                logger.clone(),
+                &logger,
                 x.to_string(),
-                t.get(x).unwrap().as_table().unwrap().clone(),
+                t.get(x).unwrap().as_table().unwrap().to_owned(),
             )?;
-            hm_r.insert(x.to_string(), rt.clone());
+            hm_r.insert(x.to_string(), rt.to_owned());
             if rt.path_is_script {
                 hm_s.insert(rt.name, rt.path);
             }
@@ -201,10 +201,10 @@ pub struct ErrorRoute {
 }
 
 impl ErrorRoute {
-    pub fn new(logger: Logger, erc: u16, t: Table) -> DogResult<Self> {
+    pub fn new(logger: &Logger, erc: u16, t: Table) -> DogResult<Self> {
         if !t.contains_key("path") {
             return Err(DogError::new(
-                logger,
+                &logger,
                 "usr-cfgensure-cfgld".to_string(),
                 "Missing key 'path'".to_string(),
             ));
@@ -216,14 +216,14 @@ impl ErrorRoute {
         })
     }
 
-    pub fn tbljob(logger: Logger, t: Table) -> DogResult<HashMap<u16, ErrorRoute>> {
+    pub fn tbljob(logger: &Logger, t: Table) -> DogResult<HashMap<u16, ErrorRoute>> {
         let mut hm = HashMap::new();
         for x in t.keys() {
             let erc = u16::from_str(x).unwrap();
             hm.insert(
                 erc,
                 ErrorRoute::new(
-                    logger.clone(),
+                    logger,
                     erc,
                     t.get(x).unwrap().as_table().unwrap().clone(),
                 )?,
@@ -249,7 +249,7 @@ impl System {
         if cfg_t.cwd.is_some() {
             std::env::set_current_dir(cfg_t.cwd.unwrap().as_str()).or_else(|_e| {
                 Err(DogError::new(
-                    Logger::default(),
+                    &Logger::default(),
                     "usr-cfgensure-setcwd".to_string(),
                     "Failed to set CWD".to_string(),
                 ))
@@ -261,7 +261,7 @@ impl System {
             logger_cfg.log_file.or_else(|| None),
         )?;
         let errors = if cfg_t.errors.is_some() {
-            ErrorRoute::tbljob(logger.clone(), cfg_t.errors.unwrap())?
+            ErrorRoute::tbljob(&logger, cfg_t.errors.unwrap())?
         } else {
             HashMap::new()
         };
@@ -272,8 +272,8 @@ impl System {
             max_cons: cfg_t.max_cons.unwrap_or_else(|| 100),
             routes,
             errors,
-            logger: logger.clone(),
-            script_loader: ScriptLoader::new(logger, scripts)?,
+            script_loader: ScriptLoader::new(&logger, scripts)?,
+            logger
         })
     }
 
@@ -315,7 +315,7 @@ impl System {
         let r = fs::read(&path);
         if r.is_err() {
             Err(DogError::new(
-                self.logger.clone(),
+                &self.logger,
                 "usr-fileread-ctserve".to_string(),
                 format!("Could not load user provided resource at {}", path),
             ))
@@ -325,10 +325,10 @@ impl System {
     }
 
     pub fn route_error(&mut self, error: NetError) -> HttpResponse {
-        let erc = &(error.erc.clone() as u16);
+        let erc = (&error.erc).to_owned() as u16;
         if (&self.errors).contains_key(&erc) {
-            let r_fn = self.errors.get(erc).unwrap().path.clone();
-            let content = self.load_content_path(r_fn.clone().into());
+            let r_fn = &self.errors.get(&erc).unwrap().path;
+            let content = self.load_content_path(r_fn.into());
             if content.is_err() {
                 return self.netdog_error(content.unwrap_err());
             }
@@ -349,7 +349,7 @@ impl System {
     }
 
     pub fn route_to_response(&mut self, route: Route) -> HttpResponse {
-        let content = self.load_content_path(route.path.clone().into());
+        let content = self.load_content_path((&route.path).into());
         if content.is_err() {
             return self.netdog_error(content.unwrap_err());
         }

@@ -77,11 +77,11 @@ impl DogError {
         format!("NetDog Error -> {}: {}", self.name, self.details)
     }
 
-    pub fn new(logger: Logger, name: String, details: String) -> Self {
+    pub fn new(logger: &Logger, name: String, details: String) -> Self {
         let mut s = Self {
             name,
             details,
-            logger,
+            logger: logger.to_owned(),
             log_level: LogLevel::ERROR,
         };
         s.print();

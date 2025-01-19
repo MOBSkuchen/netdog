@@ -172,10 +172,10 @@ impl HttpResponse {
         Ok(())
     }
 
-    pub fn send(&self, logger: Logger, stream: &TcpStream) {
+    pub fn send(&self, logger: &Logger, stream: &TcpStream) {
         if self.__send(&stream).is_err() {
             DogError::new(
-                logger,
+                &logger,
                 "con-sendfail-sr".to_string(),
                 "Error while sending response to client".to_string(),
             )

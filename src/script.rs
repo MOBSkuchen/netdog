@@ -85,7 +85,7 @@ fn _lua_log_fatal(lua: &Lua, msg: String) -> Result<(), LuaError> {
 }
 
 impl ScriptLoader {
-    pub fn new(logger: Logger, script_locs: HashMap<String, String>) -> DogResult<Self> {
+    pub fn new(logger: &Logger, script_locs: HashMap<String, String>) -> DogResult<Self> {
         let lua = Lua::new();
         lua.load_std_libs(StdLib::ALL_SAFE)
             .expect("Panic on Lua load stdlib");
@@ -136,7 +136,7 @@ impl ScriptLoader {
             let script = Script::new(&lua, script_loc.1);
             if script.is_err() {
                 return Err(DogError::new(
-                    logger.clone(),
+                    &logger,
                     "usr-scripts-ensloc".to_string(),
                     "Could not ensure that all scripts exist".to_string(),
                 ));
@@ -146,7 +146,7 @@ impl ScriptLoader {
 
         Ok(Self {
             _lua: Arc::new(Mutex::new(lua)),
-            logger,
+            logger: logger.clone(),
             scripts,
         })
     }
@@ -154,28 +154,28 @@ impl ScriptLoader {
     pub fn table_to_response(&self, table: Table) -> DogResult<HttpResponse> {
         if !table.contains_key("code").unwrap() {
             return Err(DogError::new(
-                self.logger.clone(),
+                &self.logger,
                 "usr-scripts-evres".to_string(),
                 "Missing 'code' in response table".to_string(),
             ));
         }
         if !table.contains_key("resp").unwrap() {
             return Err(DogError::new(
-                self.logger.clone(),
+                &self.logger,
                 "usr-scripts-evres".to_string(),
                 "Missing 'resp' in response table".to_string(),
             ));
         }
         if !table.contains_key("headers").unwrap() {
             return Err(DogError::new(
-                self.logger.clone(),
+                &self.logger,
                 "usr-scripts-evres".to_string(),
                 "Missing 'headers' in response table".to_string(),
             ));
         }
         if !table.contains_key("content").unwrap() {
             return Err(DogError::new(
-                self.logger.clone(),
+                &self.logger,
                 "usr-scripts-evres".to_string(),
                 "Missing 'content' in response table".to_string(),
             ));
@@ -186,7 +186,7 @@ impl ScriptLoader {
         let code = HttpCode::from_num(table.get("code").unwrap());
         if code.is_none() {
             return Err(DogError::new(
-                self.logger.clone(),
+                &self.logger,
                 "usr-scripts-evres".to_string(),
                 "Malformed entry 'code' in response table".to_string(),
             ));
@@ -207,7 +207,7 @@ impl ScriptLoader {
         let result = script.run(request);
         if result.is_err() {
             return Err(DogError::new(
-                self.logger.clone(),
+                &self.logger,
                 "usr-script-run".to_string(),
                 format!(
                     "Running script ({}) failed => {}",
