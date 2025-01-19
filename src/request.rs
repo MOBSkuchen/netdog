@@ -102,7 +102,6 @@ impl HttpRequest {
         let protocol_v = head_line_v[2].to_string();
 
         req_lines.remove(0);
-        req_lines.remove(1);
 
         let headers = Self::mk_headers(req_lines)?;
 
