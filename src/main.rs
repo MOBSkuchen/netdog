@@ -67,16 +67,20 @@ impl NetDog {
         }
     }
 
-    fn start(&self) {
+    fn start(&mut self) {
         for stream in self.listener.incoming() {
-            if stream.is_err() {
-                continue;
+            match stream {
+                Ok(stream) => {
+                    let sys = self.system.clone();
+                    let log = self.system.logger.clone();
+                    self.pool.execute(|| {
+                        NetDog::handle_connection(stream, sys, log);
+                    });
+                }
+                Err(e) => { 
+                    self.system.logger.info("Connection failed");
+                }
             }
-            let sys = self.system.clone();
-            let log = self.system.logger.clone();
-            self.pool.execute(|| {
-                NetDog::handle_connection(stream.unwrap(), sys, log);
-            });
         }
     }
 
@@ -121,6 +125,6 @@ fn main() {
     } else if args.len() > 1 && !fs::exists(args[1].clone()).unwrap() {
         println!("Tip: The default config file is config.toml\nUse ´netdog <my-config.toml>´ to specify your own");
     }
-    let netdog = NetDog::new(config_path);
+    let mut netdog = NetDog::new(config_path);
     netdog.start();
 }
