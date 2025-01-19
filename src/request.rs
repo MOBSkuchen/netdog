@@ -32,12 +32,13 @@ pub type Headers = HashMap<String, String>;
 
 fn split_once(in_string: &str) -> Result<(&str, &str), NetError> {
     let mut splitter = in_string.splitn(2, ": ");
-    if (&mut splitter).count() < 2 {
-        return Err(NetError::new(BadRequest, None));
+    let first = splitter.next();
+    let second = splitter.next();
+    if first.is_none() || second.is_none() {
+        Err(NetError::new(BadRequest, None))
+    } else {
+        Ok((first.unwrap(), second.unwrap()))
     }
-    let first = splitter.next().unwrap();
-    let second = splitter.next().unwrap();
-    Ok((first, second))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
