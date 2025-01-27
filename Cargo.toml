@@ -2,6 +2,12 @@
 name = "netdog"
 version = "1.2.3"
 edition = "2021"
+license = "MIT"
+description = "Super easy && simple http server"
+authors = ["MOBSkuchen"]
+keywords = ["http-server", "server", "http"]
+readme = "README.md"
+repository = "https://github.com/MOBSkuchen/netdog"
 
 [dependencies]
 chrono = "0.4.39"
