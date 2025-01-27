@@ -245,7 +245,7 @@ pub struct System {
 }
 
 impl System {
-    pub fn new(cfg_t: ConfigToml) -> DogResult<Self> {
+    fn new(cfg_t: ConfigToml) -> DogResult<Self> {
         if cfg_t.cwd.is_some() {
             std::env::set_current_dir(cfg_t.cwd.unwrap().as_str()).or_else(|_e| {
                 Err(DogError::new(

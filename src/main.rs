@@ -5,6 +5,7 @@ mod response;
 mod script;
 mod system;
 mod threading;
+mod clparser;
 
 use crate::errors::DogError;
 use crate::logger::Logger;
@@ -12,10 +13,11 @@ use crate::request::HttpRequest;
 use crate::system::System;
 use crate::threading::ThreadPool;
 use std::{
-    fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
 };
+use colorize_rs::AnsiColor;
+use crate::clparser::{fetch_args_clean, Argument, ArgumentParser, Flag};
 
 fn set_thread_panic_hook() {
     use std::panic::{set_hook, take_hook};
@@ -103,28 +105,44 @@ impl NetDog {
     }
 }
 
+fn _netpup_start(_: &ArgumentParser, args: &Vec<String>) -> bool {
+    let config_path = args[0].clone();
+    println!("{} ({}) >> {}", "netpup".bold().underlined().b_magenta(),
+             ("v".to_string() + VERSION).underlined().faint(),
+             "starting...".bold().underlined().b_yellow());
+    
+    let mut netpup = NetDog::new(config_path);
+    netpup.start();
+    
+    true
+}
+
 fn main() {
     set_thread_panic_hook();
-    println!("Netdog v{VERSION} - by MOBSkuchen");
-    let args = std::env::args().collect::<Vec<String>>();
-    let mut config_path = "config.toml";
-    // I know that this is suboptimal, but I hope that LLVM will optimize it for me
-    if args.len() > 1 && fs::exists(&args[1]).unwrap() {
-        config_path = &args[1];
-    } else if args.len() > 1 && args[1].to_lowercase() == "help" {
-        println!(
-            "Not enough help? More at {}",
-            make_link("https", "github.com/MOBSkuchen/netdog")
-        );
-        println!("Usage | ´netdog´ or ´netdog <my-config.toml>´");
-        println!("  OR  | ´netdog help´ or ´netdog version´");
-        println!("If you don't specify your config file path, it will default to 'config.toml'");
-        return;
-    } else if args.len() > 1 && args[1].to_lowercase() == "version" {
-        return;
-    } else if args.len() > 1 && !fs::exists(&args[1]).unwrap() {
-        println!("Tip: The default config file is config.toml\nUse ´netdog <my-config.toml>´ to specify your own");
+    
+    let mut argument_parser = ArgumentParser::new();
+    argument_parser.add_help();
+    argument_parser.add_version();
+    argument_parser.add_no_color();
+    
+    argument_parser.add_argument(Argument::new("start".to_string(), vec![], mk_clfn!(_netpup_start), 
+                                       "Starts Netpup".to_string(),
+                                       false));
+
+    argument_parser.add_flag(Flag::new("--config-path".to_string(), "-c".to_string(),
+                                       true, empty!(),
+                                       "Set config file path, defaults to 'config.toml'".to_string()));
+    
+    let result = argument_parser.parse(fetch_args_clean(), true);
+    if result.is_err() { argument_parser.handle_errors(result.unwrap_err()); return; }
+    let (pending_calls, flag_map) = result.unwrap();
+    
+    for pending_call in pending_calls {
+        if pending_call.has_name("start".to_string()) {
+            pending_call.call(&argument_parser, Some(&vec![(&flag_map).get("--config-path").unwrap().clone().or(Some("config.toml".to_string())).unwrap()]));
+            break
+        }
+        
+        if pending_call.call(&argument_parser, None) {break}
     }
-    let mut netdog = NetDog::new(config_path.to_string());
-    netdog.start();
 }
