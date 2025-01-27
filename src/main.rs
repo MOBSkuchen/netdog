@@ -24,7 +24,7 @@ fn set_thread_panic_hook() {
         orig_hook(panic_info);
         DogError::new(
             &Logger::default(),
-            "netdog-panic".to_string(),
+            "netpup-panic".to_string(),
             panic_info.to_string(),
         )
         .print();
@@ -77,7 +77,7 @@ impl NetDog {
                         NetDog::handle_connection(stream, sys, log);
                     });
                 }
-                Err(_e) => { 
+                Err(_e) => {
                     self.system.logger.info("Connection failed");
                 }
             }

@@ -74,7 +74,7 @@ pub struct DogError {
 
 impl DogError {
     pub fn __fmtx(&self) -> String {
-        format!("NetDog Error -> {}: {}", self.name, self.details)
+        format!("NetPup Error -> {}: {}", self.name, self.details)
     }
 
     pub fn new(logger: &Logger, name: String, details: String) -> Self {
@@ -111,6 +111,6 @@ impl DogError {
 
 impl Display for DogError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "NetDog Error -> {}: {}", self.name, self.details)
+        write!(f, "NetPup Error -> {}: {}", self.name, self.details)
     }
 }

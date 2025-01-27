@@ -300,7 +300,7 @@ impl System {
         Ok(System::new(config)?)
     }
 
-    pub fn netdog_error(&mut self, error: DogError) -> HttpResponse {
+    pub fn netpup_error(&mut self, error: DogError) -> HttpResponse {
         self.logger
             .error(format!("Serving client with NetDog error [{}]", error.__fmtx()).as_str());
         HttpResponse::new(
@@ -330,7 +330,7 @@ impl System {
             let r_fn = &self.errors.get(&erc).unwrap().path;
             let content = self.load_content_path(r_fn.into());
             if content.is_err() {
-                return self.netdog_error(content.unwrap_err());
+                return self.netpup_error(content.unwrap_err());
             }
             HttpResponse::new(
                 (error.erc, error.details),
@@ -351,7 +351,7 @@ impl System {
     pub fn route_to_response(&mut self, route: Route) -> HttpResponse {
         let content = self.load_content_path((&route.path).into());
         if content.is_err() {
-            return self.netdog_error(content.unwrap_err());
+            return self.netpup_error(content.unwrap_err());
         }
         HttpResponse::new(
             (HttpCode::OK, "OK".to_string()),
@@ -387,7 +387,7 @@ impl System {
                 return if ret.is_err() {
                     self.logger
                         .error(format!("Got an error from script {}", route.name).as_str());
-                    self.netdog_error(ret.unwrap_err())
+                    self.netpup_error(ret.unwrap_err())
                 } else {
                     let response = ret.unwrap();
                     if response.reroute {
