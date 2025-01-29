@@ -302,7 +302,7 @@ impl System {
 
     pub fn netpup_error(&mut self, error: DogError) -> HttpResponse {
         self.logger
-            .error(format!("Serving client with NetDog error [{}]", error.__fmtx()).as_str());
+            .error(format!("Serving client with NetPup error [{}]", error.__fmtx()).as_str());
         HttpResponse::new(
             (InternalError, error.name),
             Headers::new(),
@@ -317,7 +317,7 @@ impl System {
             Err(DogError::new(
                 &self.logger,
                 "usr-fileread-ctserve".to_string(),
-                format!("Could not load user provided resource at {}", path),
+                format!("Could not load provided resource at {}", path),
             ))
         } else {
             Ok(r.unwrap())
@@ -374,7 +374,7 @@ impl System {
         if response.is_err() {
             self.logger.info(
                 format!(
-                    "No route available for < {} > -> responding with error",
+                    "No route available for '{}', responding with error",
                     req.format()
                 )
                 .as_str(),
@@ -398,7 +398,7 @@ impl System {
                 };
             }
             self.logger
-                .info(format!("Routing < {} > -> {}", req.format(), route.path).as_str());
+                .info(format!("Routing < {} > to {}", req.format(), route.path).as_str());
             self.route_to_response(route)
         }
     }
