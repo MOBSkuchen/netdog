@@ -109,7 +109,7 @@ fn _netpup_start(_: &ArgumentParser, args: &Vec<String>) -> bool {
     let config_path = args[0].clone();
     println!("{} ({}) >> {}", "netpup".bold().underlined().b_magenta(),
              ("v".to_string() + VERSION).underlined().faint(),
-             "starting...".bold().underlined().b_yellow());
+             "starting...".bold().b_yellow());
     
     let mut netpup = NetDog::new(config_path);
     netpup.start();
