@@ -6,9 +6,11 @@
 Netpup can do all of that and more!
 
 ## Getting started
-If you're on windows you can download Netpup from the releases page.
+- Install netpup using cargo: ``cargo install netpup``
 
-Or (for other platforms), you can build it from source.
+- Or if you're on windows you can download Netpup from the releases page on the github page.
+
+- Or (for other platforms), you can build it from source.
 
 After installing, create your config toml file:
 
