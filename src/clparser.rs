@@ -5,12 +5,12 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 use colorize_rs::{color_enabled, AnsiColor};
-use crate::clparser::ClParserError::{FlagMissingValue, TooFewArguments, TooManyArguments};
+use crate::clparser::ClParserError::{FlagMissingValue, TooFewArguments, UnknownArgument};
 
 #[derive(Debug)]
 pub enum ClParserError {
     TooFewArguments(usize),
-    TooManyArguments(usize),
+    UnknownArgument(String),
     FlagMissingValue(String)
 }
 
@@ -309,13 +309,13 @@ impl ArgumentParser {
         for i in 0..args.len() {
             let item = &args[i];
             for (n, flag) in (&self.flags).iter().enumerate() {
-                if item.starts_with(&flag.name) && (!flag.value || (&flag.name == item)) || 
-                    item.starts_with(&flag.mini) && (!flag.value || (&flag.mini == item)) {
+                if item.starts_with(&flag.name) && (!flag.value || (&flag.name == item) || item.contains("=")) || 
+                    item.starts_with(&flag.mini) && (!flag.value || (&flag.mini == item) || item.contains("=")) {
                     let rgs = self.parse_flag(flag, item, args, i)?;
                     flag_map.insert(flag.name.clone(), if flag.value {Some((&rgs[0]).clone())} else {None});
                     pending_calls.push(PendingCall::new(flag.name.clone(), n, rgs, CallType::FLAG));
                     remove_list.push(i);
-                    if flag.value { remove_list.push(i + 1); }
+                    if flag.value && !item.contains("=") { remove_list.push(i + 1); }
                 }
             }
         }
@@ -345,7 +345,7 @@ impl ArgumentParser {
         pending_calls.append(&mut self.parse_positionals(&mut args)?);
         
         if args.len() > 0 {
-            Err(TooManyArguments(args.len()))
+            Err(UnknownArgument(args[0].clone()))
         } else {
             Ok((pending_calls, flag_map))
         }
@@ -357,8 +357,8 @@ impl ArgumentParser {
                 eprintln!("{}\n", format!("Invalid usage! Got too few arguments. Expected {}", expected).b_red().bold());
                 _print_help(self);
             }
-            TooManyArguments(got) => {
-                eprintln!("{}\n", format!("Invalid usage! Got too many arguments. Got {} too many", got).b_red().bold());
+            UnknownArgument(got) => {
+                eprintln!("{}\n", format!("Invalid usage! Unknown argument '{}'", got).b_red().bold());
                 _print_help(self);
             }
             FlagMissingValue(flag) => {
