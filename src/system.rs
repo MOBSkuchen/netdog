@@ -51,6 +51,7 @@ fn url_resolve(route: &Route, url: &str, method: &Methods) -> Result<Route, ()> 
         methods: route.methods.clone(),
         name: (&route).name.clone().into(),
         path_is_script: route.path_is_script,
+        content_type: Some(route.content_type.clone().unwrap().to_string()),
     })
 }
 
@@ -100,6 +101,7 @@ pub struct Route {
     url: String,
     methods: Vec<Methods>,
     path_is_script: bool,
+    content_type: Option<String>
 }
 
 impl Route {
@@ -163,6 +165,13 @@ impl Route {
                 "Missing key 'method' or 'methods'".to_string(),
             ));
         };
+        
+        let content_type = if t.contains_key("content_type") {
+            t.get("content_type").unwrap().as_str().unwrap().to_string()
+        } else {
+            "".to_string()
+        };
+            
 
         Ok(Self {
             name,
@@ -170,6 +179,7 @@ impl Route {
             url: t.get("url").unwrap().as_str().unwrap().to_string(),
             methods: methods?,
             path_is_script,
+            content_type: Some(content_type),
         })
     }
 
@@ -306,7 +316,7 @@ impl System {
         HttpResponse::new(
             (InternalError, error.name),
             Headers::new(),
-            (vec![], ContentType::NONE),
+            (vec![], ContentType::NONE.to_string()),
             false,
         )
     }
@@ -335,14 +345,14 @@ impl System {
             HttpResponse::new(
                 (error.erc, error.details),
                 Headers::new(),
-                (content.unwrap(), ContentType::from_file_name(&*r_fn)),
+                (content.unwrap(), ContentType::from_file_name(&*r_fn).to_string()),
                 false,
             )
         } else {
             HttpResponse::new(
                 (error.erc, error.details),
                 Headers::new(),
-                (format!("Error {}", erc).into_bytes(), HTML),
+                (format!("Error {}", erc).into_bytes(), HTML.to_string()),
                 false,
             )
         }
@@ -353,10 +363,13 @@ impl System {
         if content.is_err() {
             return self.netpup_error(content.unwrap_err());
         }
+
+        let content_type = route.content_type.or(Some(ContentType::from_file_name(&*route.path).to_string())).unwrap();
+        
         HttpResponse::new(
             (HttpCode::OK, "OK".to_string()),
             Headers::new(),
-            (content.unwrap(), ContentType::from_file_name(&*route.path)),
+            (content.unwrap(), content_type),
             false,
         )
     }

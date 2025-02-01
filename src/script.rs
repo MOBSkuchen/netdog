@@ -197,7 +197,7 @@ impl ScriptLoader {
         Ok(HttpResponse::new(
             (code.unwrap(), table.get("resp").unwrap()),
             table.get("headers").unwrap(),
-            (content.into_bytes(), ContentType::from_ext(ct.as_str())),
+            (content.into_bytes(), ContentType::from_ext(ct.as_str()).to_string()),
             reroute,
         ))
     }

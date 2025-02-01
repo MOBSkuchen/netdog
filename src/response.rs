@@ -95,7 +95,7 @@ impl ContentType {
             "webm" => ContentType::WEBM,
             "ico" => ContentType::ICO,
             "" => ContentType::NONE,
-            _ => ContentType::UNKNOWN,
+            _ => { ContentType::UNKNOWN }
         }
     }
 
@@ -114,7 +114,7 @@ pub struct HttpResponse {
     protocol_v: String,
     response: (HttpCode, String),
     headers: Headers,
-    content: (Vec<u8>, ContentType),
+    content: (Vec<u8>, String),
     has_content: bool,
     pub reroute: bool,
 }
@@ -123,20 +123,20 @@ impl HttpResponse {
     pub fn new(
         response: (HttpCode, String),
         headers: Headers,
-        content: (Vec<u8>, ContentType),
+        content: (Vec<u8>, String),
         reroute: bool,
     ) -> Self {
         let mut header_c = headers.clone();
-        if content.1 != ContentType::NONE {
+        if content.1 != "" {
             header_c.insert("Content-Length".to_string(), content.0.len().to_string());
-            header_c.insert("Content-Type".to_string(), content.1.clone().to_string());
+            header_c.insert("Content-Type".to_string(), content.1.clone());
         }
         Self {
             protocol_v: "HTTP/1.1".to_string(),
             response,
             headers: header_c,
             content: (&content).to_owned(),
-            has_content: content.1 != ContentType::NONE,
+            has_content: content.1 != "",
             reroute,
         }
     }
