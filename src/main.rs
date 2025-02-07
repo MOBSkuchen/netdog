@@ -148,11 +148,11 @@ fn main() {
 
     let matches = clap::Command::new(NAME)
         .about(DESCRIPTION)
-        .version(VERSION)        
+        .version(VERSION)
         .color(ColorChoice::Never)
         .arg(Arg::new("start")
-            .long("run")
             .long("start")
+            .short('s')
             .help("Runs netpup")
             .action(clap::ArgAction::SetTrue))
         .arg(Arg::new("no-update")
@@ -161,9 +161,7 @@ fn main() {
             .help("Prevents automatic updates using cargo")
             .action(clap::ArgAction::SetTrue))
         .arg(Arg::new("config-path")
-            .long("cp")
             .long("config-path")
-            .short('p')
             .short('c')
             .help("Prevents automatic updates using cargo")
             .value_hint(clap::ValueHint::FilePath)
@@ -179,11 +177,11 @@ fn main() {
         update_and_restart()
     }
 
-    let config_path = 
-        if let Some(config_path) = 
-        matches.get_one::<String>("config-path") { config_path } 
+    let config_path =
+        if let Some(config_path) =
+        matches.get_one::<String>("config-path") { config_path }
         else { "config.toml" };
-    
+
     if matches.get_flag("start") {
         _netpup_start(config_path.to_string())
     }
