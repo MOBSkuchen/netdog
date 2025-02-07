@@ -153,6 +153,7 @@ impl HttpResponse {
             self.response.0.to_num(),
             self.response.1
         );
+        r += "\r\n";
         for header in &self.headers {
             r += format!("\n{}: {}", header.0, header.1).as_str()
         }
