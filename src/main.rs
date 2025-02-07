@@ -16,7 +16,8 @@ use crate::request::HttpRequest;
 use crate::system::System;
 use crate::threading::ThreadPool;
 use std::{env, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}};
-use clap::{Arg, ColorChoice, Command};
+use std::process::{exit, Command};
+use clap::{Arg, ColorChoice};
 
 fn set_thread_panic_hook() {
     use std::panic::{set_hook, take_hook};
@@ -109,27 +110,61 @@ fn _netpup_start(config_path: String) {
     netpup.start();
 }
 
+fn update_and_restart() {
+    println!("Updating {}...", NAME);
+    let status = Command::new("cargo")
+        .args(["install", NAME, "--force"])
+        .status()
+        .expect("Failed to update package");
+
+    if status.success() {
+        let mut args: Vec<String> = env::args().collect();
+        args.pop();
+        args.push("--no-update".to_string());
+        let exe = env::current_exe().expect("Failed to get current executable");
+        Command::new(exe).args(args).spawn().expect("Failed to restart");
+        exit(0);
+    } else {
+        eprintln!("Update failed.");
+    }
+}
+
+fn get_latest_version() -> String {
+    let output = Command::new("cargo")
+        .args(["search", NAME])
+        .output()
+        .expect("Failed to search for package");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if let Some(line) = stdout.lines().find(|l| l.starts_with(NAME)) {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        return parts[2].trim_matches('"').to_string();
+    }
+    String::new()
+}
+
 fn main() {
     set_thread_panic_hook();
 
-    let matches = Command::new(NAME)
+    let matches = clap::Command::new(NAME)
         .about(DESCRIPTION)
         .version(VERSION)        
         .color(ColorChoice::Never)
         .arg(Arg::new("start")
+            .long("run")
             .long("start")
-            .short('s')
             .help("Runs netpup")
             .action(clap::ArgAction::SetTrue))
         .arg(Arg::new("no-update")
-            .long("no-update")
             .long("nu")
-            .short('u')
+            .long("no-update")
             .help("Prevents automatic updates using cargo")
             .action(clap::ArgAction::SetTrue))
         .arg(Arg::new("config-path")
+            .long("cp")
             .long("config-path")
             .short('p')
+            .short('c')
             .help("Prevents automatic updates using cargo")
             .value_hint(clap::ValueHint::FilePath)
             .action(clap::ArgAction::Set))
@@ -140,9 +175,8 @@ fn main() {
             .action(clap::ArgAction::Version))
         .get_matches();
 
-
-    if !matches.get_flag("no-update") {
-        println!("Updates disabled");
+    if !matches.get_flag("no-update") && VERSION != get_latest_version() {
+        update_and_restart()
     }
 
     let config_path = 
