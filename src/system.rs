@@ -1,8 +1,6 @@
-use crate::errors::HttpCode::{InternalError, NotFound};
 use crate::errors::{DogError, DogResult, HttpCode, NetError, NetResult};
 use crate::logger::Logger;
 use crate::request::{Headers, HttpRequest, Methods};
-use crate::response::ContentType::HTML;
 use crate::response::{ContentType, HttpResponse};
 use crate::script::ScriptLoader;
 use serde::Deserialize;
@@ -63,7 +61,7 @@ fn url_resolve_mult(routes: &[Route], url: &str, method: Methods) -> NetResult<R
         }
     }
     Err(NetError::new(
-        NotFound,
+        HttpCode::NotFound,
         Some("No matching route found".to_string()),
     ))
 }
@@ -314,7 +312,7 @@ impl System {
         self.logger
             .error(format!("Serving client with NetPup error [{}]", error.__fmtx()).as_str());
         HttpResponse::new(
-            (InternalError, error.name),
+            (HttpCode::InternalError, error.name),
             Headers::new(),
             (vec![], ContentType::NONE.to_string()),
             false,
@@ -352,7 +350,7 @@ impl System {
             HttpResponse::new(
                 (error.erc, error.details),
                 Headers::new(),
-                (format!("Error {}", erc).into_bytes(), HTML.to_string()),
+                (format!("Error {}", erc).into_bytes(), ContentType::HTML.to_string()),
                 false,
             )
         }

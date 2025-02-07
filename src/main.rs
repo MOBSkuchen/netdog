@@ -5,19 +5,18 @@ mod response;
 mod script;
 mod system;
 mod threading;
-mod clparser;
+
+pub const NAME: &str = env!("CARGO_PKG_NAME");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 use crate::errors::DogError;
 use crate::logger::Logger;
 use crate::request::HttpRequest;
 use crate::system::System;
 use crate::threading::ThreadPool;
-use std::{
-    io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream},
-};
-use colorize_rs::AnsiColor;
-use crate::clparser::{fetch_args_clean, Argument, ArgumentParser, Flag};
+use std::{env, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}};
+use clap::{Arg, ColorChoice, Command};
 
 fn set_thread_panic_hook() {
     use std::panic::{set_hook, take_hook};
@@ -32,8 +31,6 @@ fn set_thread_panic_hook() {
         .print();
     }));
 }
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn make_link(prefix: &str, addr: &str) -> String {
     format!(
@@ -105,44 +102,55 @@ impl NetDog {
     }
 }
 
-fn _netpup_start(_: &ArgumentParser, args: &Vec<String>) -> bool {
-    let config_path = args[0].clone();
-    println!("{} ({}) >> {}", "netpup".bold().underlined().b_magenta(),
-             ("v".to_string() + VERSION).underlined().faint(),
-             "starting...".bold().b_yellow());
+fn _netpup_start(config_path: String) {
+    println!("netpup (v{}) >> starting...", VERSION);
     
     let mut netpup = NetDog::new(config_path);
     netpup.start();
-    
-    true
 }
 
 fn main() {
     set_thread_panic_hook();
-    
-    let mut argument_parser = ArgumentParser::new();
-    argument_parser.add_help();
-    argument_parser.add_version();
-    argument_parser.add_no_color();
-    
-    argument_parser.add_argument(Argument::new("start".to_string(), vec![], mk_clfn!(_netpup_start), 
-                                       "Starts Netpup".to_string(),
-                                       false));
 
-    argument_parser.add_flag(Flag::new("--config-path".to_string(), "-c".to_string(),
-                                       true, empty!(),
-                                       "Set config file path, defaults to 'config.toml'".to_string()));
+    let matches = Command::new(NAME)
+        .about(DESCRIPTION)
+        .version(VERSION)        
+        .color(ColorChoice::Never)
+        .arg(Arg::new("start")
+            .long("start")
+            .short('s')
+            .help("Runs netpup")
+            .action(clap::ArgAction::SetTrue))
+        .arg(Arg::new("no-update")
+            .long("no-update")
+            .long("nu")
+            .short('u')
+            .help("Prevents automatic updates using cargo")
+            .action(clap::ArgAction::SetTrue))
+        .arg(Arg::new("config-path")
+            .long("config-path")
+            .short('p')
+            .help("Prevents automatic updates using cargo")
+            .value_hint(clap::ValueHint::FilePath)
+            .action(clap::ArgAction::Set))
+        .arg(Arg::new("version")
+            .short('v')
+            .long("version")
+            .help("Displays the version")
+            .action(clap::ArgAction::Version))
+        .get_matches();
+
+
+    if !matches.get_flag("no-update") {
+        println!("Updates disabled");
+    }
+
+    let config_path = 
+        if let Some(config_path) = 
+        matches.get_one::<String>("config-path") { config_path } 
+        else { "config.toml" };
     
-    let result = argument_parser.parse(fetch_args_clean(), true);
-    if result.is_err() { argument_parser.handle_errors(result.unwrap_err()); return; }
-    let (pending_calls, flag_map) = result.unwrap();
-    
-    for pending_call in pending_calls {
-        if pending_call.has_name("start".to_string()) {
-            pending_call.call(&argument_parser, Some(&vec![(&flag_map).get("--config-path").unwrap().clone().or(Some("config.toml".to_string())).unwrap()]));
-            break
-        }
-        
-        if pending_call.call(&argument_parser, None) {break}
+    if matches.get_flag("start") {
+        _netpup_start(config_path.to_string())
     }
 }

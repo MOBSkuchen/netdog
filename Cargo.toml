@@ -13,8 +13,8 @@ homepage = "https://crates.io/crates/netpup"
 
 [dependencies]
 chrono = "0.4.39"
-colorize-rs = "0.1.2"
 lua-src = "547.0.0"
 mlua = { version = "0.10.2", features = ["lua54", "vendored"] }
 serde = { version = "1.0.217", features = ["derive"] }
 toml = "0.8.19"
+clap = "4.5.28"
