@@ -16,6 +16,7 @@ use crate::request::HttpRequest;
 use crate::system::System;
 use crate::threading::ThreadPool;
 use std::{env, io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}};
+use std::error::Error;
 use std::process::{exit, Command};
 use clap::{Arg, ColorChoice};
 
@@ -83,16 +84,27 @@ impl NetDog {
             }
         }
     }
+    
+    fn safe_handle_connection(stream: &TcpStream) -> Result<Vec<String>, Box<dyn Error>> {
+        let buf_reader_lines = BufReader::new(stream).lines();
+        let mut lines = vec![];
+
+        for buf_reader_line in buf_reader_lines {
+            let line = buf_reader_line?;
+            if line.is_empty() {
+                return Ok(lines)
+            }
+            lines.push(line);
+        }
+        
+        Ok(lines)
+    }
 
     fn handle_connection(stream: TcpStream, mut system: System, logger: Logger) {
-        let buf_reader = BufReader::new(&stream);
-        let http_request: Vec<_> = buf_reader
-            .lines()
-            .map(|result| result.unwrap())
-            .take_while(|line| !line.is_empty())
-            .collect();
-
-        let request_r = HttpRequest::from_raw(http_request);
+        let http_request = Self::safe_handle_connection(&stream);
+        if http_request.is_err() { return; }
+        
+        let request_r = HttpRequest::from_raw(http_request.unwrap());
         if request_r.is_err() {
             system
                 .route_error(request_r.unwrap_err())
