@@ -27,6 +27,7 @@ log_file = 'logfile.log'                    # OPTIONAL | File to log to. If not 
 methods = ["GET"]                           # OPTIONAL | List of methods (GET, POST).
 url = "/"                                   # REQUIRED | Url to access.
 path = "mainpage.html"                      # REQUIRED | Path to serve from.
+content_type = "text/html"                  # OPTIONAL | Specify response content type. Netpup willl try to infer this, if not provided
 
 # Make sure that routes with '*' come last
 [routes.resources]                          # New Route -> "resources" | Name must be unique, but is not important.
