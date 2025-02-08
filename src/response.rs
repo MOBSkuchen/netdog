@@ -153,13 +153,11 @@ impl HttpResponse {
             self.response.0.to_num(),
             self.response.1
         );
-        r += "\r\n";
+        r += "\r";
         for header in &self.headers {
             r += format!("\n{}: {}", header.0, header.1).as_str()
         }
-        if self.has_content {
-            r += "\n\n";
-        }
+        r += "\r\n\r\n";
         [r.into_bytes(), content_vecu8.0.clone()].concat()
     }
 
