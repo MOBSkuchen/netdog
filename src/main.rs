@@ -175,7 +175,7 @@ fn main() {
         .arg(Arg::new("config-path")
             .long("config-path")
             .short('c')
-            .help("Prevents automatic updates using cargo")
+            .help("Specify config path. Defaults to config.toml")
             .value_hint(clap::ValueHint::FilePath)
             .action(clap::ArgAction::Set))
         .arg(Arg::new("version")
