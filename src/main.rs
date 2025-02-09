@@ -162,6 +162,7 @@ fn main() {
         .about(DESCRIPTION)
         .version(VERSION)
         .color(ColorChoice::Never)
+        .disable_version_flag(true)
         .arg(Arg::new("start")
             .long("start")
             .short('s')
