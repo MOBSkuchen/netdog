@@ -34,13 +34,6 @@ fn set_thread_panic_hook() {
     }));
 }
 
-pub fn make_link(prefix: &str, addr: &str) -> String {
-    format!(
-        "{}://\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
-        prefix, addr, addr
-    )
-}
-
 struct NetDog {
     system: System,
     listener: TcpListener,
@@ -56,7 +49,7 @@ impl NetDog {
         let system = system_r.unwrap();
 
         let addr = format!("{}:{:?}", system.ip, system.port);
-        println!("Running on {}", make_link("http", addr.as_str()));
+        println!("Running on http://{}", addr.as_str());
 
         let listener = TcpListener::bind(addr).unwrap();
         let pool = ThreadPool::new(&system.logger, system.max_cons as usize);
@@ -123,7 +116,7 @@ fn _netpup_start(config_path: String) {
 }
 
 fn update_and_restart() {
-    println!("Updating {}...", NAME);
+    println!("Netpup is outdated (use --no-update to disable this behavior). Updating {}...", NAME);
     let status = Command::new("cargo")
         .args(["install", NAME, "--force"])
         .status()
@@ -166,7 +159,7 @@ fn main() {
         .arg(Arg::new("start")
             .long("start")
             .short('s')
-            .help("Runs netpup")
+            .help("Starts netpup")
             .action(clap::ArgAction::SetTrue))
         .arg(Arg::new("no-update")
             .long("nu")
@@ -176,7 +169,7 @@ fn main() {
         .arg(Arg::new("config-path")
             .long("config-path")
             .short('c')
-            .help("Specify config path. Defaults to config.toml")
+            .help("Config path => TOML. Defaults to config.toml")
             .value_hint(clap::ValueHint::FilePath)
             .action(clap::ArgAction::Set))
         .arg(Arg::new("version")
